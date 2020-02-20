@@ -9,7 +9,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ['/gitscan.sh', '${{ inputs.full }}']
+    - '/gitscan.sh'
+    - ${{ inputs.full }}
 branding:
   icon: 'shield'  
   color: 'orange'
