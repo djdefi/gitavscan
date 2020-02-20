@@ -5,6 +5,7 @@ inputs:
   full:  
     description: 'Full history scan'
     required: false
+    default: '--full'
 runs:
   using: 'docker'
   image: 'Dockerfile'
