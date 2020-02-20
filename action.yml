@@ -1,0 +1,15 @@
+# action.yml
+name: 'Git AV Scan'
+description: 'Scan for malicious files in a Git repository'
+inputs:
+  full:  
+    description: 'Full history scan'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ['/gitscan.sh', '${{ inputs.full }}']
+branding:
+  icon: 'shield'  
+  color: 'orange'

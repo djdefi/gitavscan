@@ -1,0 +1,12 @@
+on: [push]
+
+jobs:
+  gitavscan:
+    runs-on: ubuntu-latest
+    name: History AV Scan
+    steps:
+    - uses: actions/checkout@v2
+    - name: Git AV Scan
+      uses: djdefi/gitavscan@v1
+      with:
+        full: '--full'
