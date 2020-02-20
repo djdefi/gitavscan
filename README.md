@@ -23,8 +23,10 @@ jobs:
     name: History AV Scan
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v1
+      uses: djdefi/gitavscan@v2
       with:
         full: '--full'
 ```  
@@ -40,8 +42,10 @@ jobs:
     name: AV scan
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v1
+      uses: djdefi/gitavscan@v2
 ``` 
 
      
