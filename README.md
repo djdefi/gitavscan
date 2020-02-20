@@ -26,7 +26,7 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v2
+      uses: djdefi/gitavscan@v1
       with:
         full: '--full'
 ```  
@@ -43,7 +43,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v2
+      uses: djdefi/gitavscan@v1
 ``` 
 
      
