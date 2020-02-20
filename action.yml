@@ -1,6 +1,6 @@
 # action.yml
-name: 'Git AV Scan'
-description: 'Scan for malicious files in a Git repository'
+name: 'Git Anti Virus Scan'
+description: 'Anti Virus scan for malicious files in a Git repository'
 inputs:
   full:  
     description: 'Full history scan'
