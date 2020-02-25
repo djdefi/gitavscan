@@ -46,4 +46,16 @@ jobs:
       uses: djdefi/gitavscan@v1
 ``` 
 
-     
+## Running locally with Docker
+
+Build:
+
+```shell
+docker build -t gitavscan .
+```
+
+Run full scan:
+
+```shell
+docker run --rm -it -v /path/to/repo:/scandir gitavscan --full
+```
