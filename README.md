@@ -31,7 +31,7 @@ jobs:
         full: '--full'
 ```  
 
-Scan current HEAD only. Only the most recent commit pushed will be scanned. Fast but misses history:
+Scan current HEAD only. Only the most recent commit pushed will be scanned. Best used with an [enforced linear history](https://help.github.com/en/github/administering-a-repository/requiring-a-linear-commit-history). Fast but misses history:
 
 ```yaml
 on: [push]
