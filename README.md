@@ -1,18 +1,18 @@
 ## Git AV Scan Action
 
-Action to scan Git HEAD or history using [ClamAV](https://www.clamav.net/). 
+Action and Dockerfile to scan Git HEAD or commit history using [ClamAV](https://www.clamav.net/). 
 
 ## Example usage
 
 ```
-uses: djdefi/gitavscan@v1
+uses: djdefi/gitavscan@master
 with:
   full: '--full'
 ```
 
 ## Example workflow
 
-Deep history scan (slow but thorough):
+Deep history scan. Scans each commit in the repositry history. Slow but thorough:
 
 ```yaml
 on: [push]
@@ -22,16 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@master
       with:
         fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v1
+      uses: djdefi/gitavscan@master
       with:
         full: '--full'
 ```  
 
-Scan current HEAD only (fast but misses history):
+Scan current HEAD only. Only the most recent commit pushed will be scanned. Fast but misses history:
 
 ```yaml
 on: [push]
@@ -41,9 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     name: AV scan
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@master
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v1
+      uses: djdefi/gitavscan@master
 ``` 
 
 ## Running locally with Docker
