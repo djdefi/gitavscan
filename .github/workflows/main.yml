@@ -5,10 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@master
       with:
         fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@v1
+      uses: djdefi/gitavscan@master
       with:
         full: '--full'
