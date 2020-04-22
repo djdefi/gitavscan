@@ -12,8 +12,8 @@ jobs:
           wget https://secure.eicar.org/eicarcom2.zip
           tar -cvf eicar.com.tar eicar.com
 
-      - name: History AV Scan
-      - uses: actions/checkout@v2
+      - name: History checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: '0'
       - name: Git AV Scan
