@@ -55,12 +55,12 @@ if [[ "$@" = "--full" ]] || [[ "$@" = "-f" ]]; then
   cd $(basename $REPO)
 
   # count commits 
-  revs=$(git log --children | grep commit\   | sed "s;commit ;;" |  xargs -n1 | sort -u | xargs echo | wc -w)
+  revs=$(git log --children | grep ^commit\   | sed "s;commit ;;" |  xargs -n1 | sort -u | xargs echo | wc -w)
   count=1
   echo "Inspecting $revs revisions..."
 
   # scan all
-  for F in $(git log --children | grep commit\   | sed "s;commit ;;" |  xargs -n1 | sort -u | xargs echo); do
+  for F in $(git log --children | grep ^commit\   | sed "s;commit ;;" |  xargs -n1 | sort -u | xargs echo); do
     echo "Scanning commit $count of $revs: $F"
     git checkout $F 2> /dev/null 1>&2
     output=$($SCRIPT $EXCLUDE)
