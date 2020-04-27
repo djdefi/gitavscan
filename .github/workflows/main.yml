@@ -7,6 +7,7 @@ jobs:
       - name: History checkout
         uses: actions/checkout@v2
         with:
+          # Non-shallow
           fetch-depth: '0'
            
       - name: Download Test Virus
@@ -16,8 +17,10 @@ jobs:
           wget https://secure.eicar.org/eicar_com.zip
           wget https://secure.eicar.org/eicarcom2.zip
           tar -cvf eicar.com.tar eicar.com
-
-      - name: Git AV Scan
+      
+      - name: Git AV Scan (latest commit + working directory)
+        uses: djdefi/gitavscan@master
+      - name: Git AV Scan (full history)
         uses: djdefi/gitavscan@master
         with:
           full: '--full'
