@@ -20,6 +20,8 @@ jobs:
           tar -cvf eicar.com.tar eicar.com
       - name: Commit to history Test Virus
         run: |
+          git config --global user.email "djdefi+action@github.com"
+          git config --global user.name "djdefi"
           git add eicar*
           git commit -am "Commit test virus"
           rm eicar*
