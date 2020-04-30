@@ -9,7 +9,8 @@ jobs:
         with:
           # Non-shallow
           fetch-depth: '0'
-           
+      - name: Git AV Scan (latest commit + working directory)
+        uses: djdefi/gitavscan@master  
       - name: Download Test Virus
         run: |
           wget https://secure.eicar.org/eicar.com
@@ -17,9 +18,12 @@ jobs:
           wget https://secure.eicar.org/eicar_com.zip
           wget https://secure.eicar.org/eicarcom2.zip
           tar -cvf eicar.com.tar eicar.com
-      
-      - name: Git AV Scan (latest commit + working directory)
-        uses: djdefi/gitavscan@master
+      - name: Download Test Virus
+        run: |
+          git add eicar*
+          git commit -am "Commit test virus"
+          rm eicar*
+          git commit -am "Remove test virus"
       - name: Git AV Scan (full history)
         uses: djdefi/gitavscan@master
         with:
