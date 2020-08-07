@@ -12,5 +12,3 @@ jobs:
       uses: djdefi/gitavscan@master
       with:
         full: '--full'
-    - name: ShellCheck
-      uses: ludeeus/action-shellcheck@0.4.1
