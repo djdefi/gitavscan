@@ -9,6 +9,6 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@master
+      uses: djdefi/gitavscan@main
       with:
         full: '--full'
