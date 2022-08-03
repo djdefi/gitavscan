@@ -1,10 +1,12 @@
 ## Git AV Scan Action
 
-Action and Dockerfile to scan Git HEAD or commit history using [ClamAV](https://www.clamav.net/). 
+Action and Dockerfile to scan Git HEAD or commit history using [ClamAV](https://www.clamav.net/). ClamAV® is an open-source antivirus engine for detecting trojans, viruses, malware & other malicious threats.
 
 ## Disclaimer
 
 This is a proof of concept, and does not provide any guarantee that carefully hidden objects will be scanned. Strong endpoint security, access, and code review policies and practices are the most effective way to ensure that malicious files or code is not introduced into a repository.
+
+This project is not affilicated with the official ClamAV project.
 
 ## Example usage
 
@@ -26,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: '0'
     - name: Git AV Scan
@@ -45,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     name: AV scan
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Git AV Scan
       uses: djdefi/gitavscan@main
 ``` 
