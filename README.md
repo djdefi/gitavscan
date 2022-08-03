@@ -6,7 +6,7 @@ Action and Dockerfile to scan Git HEAD or commit history using [ClamAV](https://
 
 This is a proof of concept, and does not provide any guarantee that carefully hidden objects will be scanned. Strong endpoint security, access, and code review policies and practices are the most effective way to ensure that malicious files or code is not introduced into a repository.
 
-This project is not affilicated with the official ClamAV project.
+This project is not affiliated with the official ClamAV project.
 
 ## Example usage
 
