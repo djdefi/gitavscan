@@ -7,7 +7,7 @@ inputs:
     required: false
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/djdefi/gitavscan:7'
+  image: 'docker://ghcr.io/djdefi/gitavscan:9'
   args:
     - '/gitscan.sh'
     - ${{ inputs.full }}
