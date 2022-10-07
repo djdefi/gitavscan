@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v3
 
       # Download test virii
-      - name:Download EICAR test files
+      - name: Download EICAR test files
         run: |
           wget "https://secure.eicar.org/eicar.com.txt"
           wget "https://secure.eicar.org/eicar.com"
