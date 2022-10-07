@@ -36,7 +36,7 @@ jobs:
       - name: Build image
         run: docker build -t gitavscan .
       
-      - name: Run full scan:
+      - name: Run full scan
         run: |
           docker run --rm -it -v $GITHUB_WORKSPACE:/scandir gitavscan --full
 
