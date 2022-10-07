@@ -38,8 +38,8 @@ jobs:
       
       - name: Run full scan
         run: |
-          docker run --rm -it -v $GITHUB_WORKSPACE:/scandir gitavscan --full
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan --full
 
       - name: Run basic scan
         run: |
-          docker run --rm -it -v $GITHUB_WORKSPACE:/scandir gitavscan  
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan  
