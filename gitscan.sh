@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-#/ Usage: gitscan.sh [--full]
+#/ Usage: gitscan.sh [--full] [--options "OPTIONS"]
 #/
 #/ Scan the latest commit, or the full history of a Git repository.
 #/
 #/ OPTIONS:
 #/   -h | --help                      Show this message.
 #/   -f | --full                      Full history scan.      
+#/   -o | --options "OPTIONS"         Additional options for clamscan command.
 #/
 #/ EXAMPLES: 
 #/
@@ -15,6 +16,8 @@
 #/    Scan the entire history.
 #/      $ gitscan.sh --full
 #/    
+#/    Scan with additional clamscan options.
+#/      $ gitscan.sh --options "--max-filesize=1M"
 #/        
 set -o nounset -o pipefail
 
@@ -22,10 +25,29 @@ usage() {
   grep '^#/' < "$0" | cut -c 4-
 }
 
-if [[ "$@" = "--help" ]] || [[ "$@" = "-h" ]]; then
-  usage
-  exit 2
-fi
+ADDITIONAL_OPTIONS=""
+
+for arg in "$@"
+do
+  case $arg in
+    -h|--help)
+      usage
+      exit 2
+      ;;
+    -f|--full)
+      FULL_SCAN="true"
+      shift
+      ;;
+    -o|--options)
+      ADDITIONAL_OPTIONS="$2"
+      shift
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 /usr/bin/freshclam
 
@@ -37,7 +59,7 @@ if ! [ -d ".git" ]; then
 fi
 
 EXCLUDE="--exclude=/.git"
-SCRIPT="/usr/bin/clamscan -ri --no-summary"
+SCRIPT="/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS"
 TMP=$(mktemp -d -q)
 REPO=$(pwd)
 
@@ -48,7 +70,7 @@ output=$($SCRIPT)
     echo "$output" | tee -a /output.txt
   fi
 
-if [[ "$@" = "--full" ]] || [[ "$@" = "-f" ]]; then
+if [[ "${FULL_SCAN:-}" = "true" ]]; then
   # clone the git repository
   pushd $TMP > /dev/null 2>&1
   git clone $REPO 2> /dev/null 1>&2
