@@ -18,7 +18,7 @@ with:
 
 ## Example workflow
 
-Deep history scan. Scans each commit in the repositry history. Slow but thorough:
+Deep history scan. Scans each commit in the repository history. Slow but thorough:
 
 ```yaml
 on: [push]
@@ -51,6 +51,26 @@ jobs:
     - name: Git AV Scan
       uses: djdefi/gitavscan@main
 ``` 
+
+### Passing options to `clamscan`
+
+Setting additional [`clamscan` command line options](https://linux.die.net/man/1/clamscan) is supported. This can be used to limit or exclude directories from the scope of the scan.
+
+```yaml
+on: [push]
+jobs:
+  gitavscan:
+    runs-on: ubuntu-latest
+    name: History AV Scan
+    steps:
+    - uses: actions/checkout@main
+      with:
+        fetch-depth: '0'
+    - name: Git AV Scan
+      uses: djdefi/gitavscan@main
+      with:
+        options: '--max-filesize=1M'
+```        
 
 ## Running locally with Docker
 

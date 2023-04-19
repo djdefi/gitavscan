@@ -11,6 +11,7 @@ runs:
   args:
     - '/gitscan.sh'
     - ${{ inputs.full }}
+    - ${{ inputs.options }}
 branding:
   icon: 'shield'  
   color: 'orange'
