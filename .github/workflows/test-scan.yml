@@ -43,3 +43,7 @@ jobs:
       - name: Run basic scan
         run: |
           docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh | grep "Win.Test.EICAR_HDB-1 FOUND"
+      
+      - name: Run basic scan with optional args
+        run: |
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--max-filesize=1M --max-files=15" | grep "Win.Test.EICAR_HDB-1 FOUND"
