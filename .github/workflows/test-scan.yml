@@ -47,3 +47,14 @@ jobs:
       - name: Run basic scan with optional args
         run: |
           docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--max-filesize=1M --max-files=15" | grep "Win.Test.EICAR_HDB-1 FOUND"
+      
+      - name: Test unknown option
+        run: |
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
+          echo "$output" | grep "Usage:"
+        
+      - name: Run scan on non-Git directory
+        run: |
+          mkdir non_git_dir
+          output=$(docker run --rm -v $GITHUB_WORKSPACE/non_git_dir:/scandir gitavscan /gitscan.sh || true)
+          echo "$output" | grep "ERROR: Not a git repository, skipping history scan."
