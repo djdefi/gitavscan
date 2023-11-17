@@ -25,28 +25,30 @@ usage() {
   grep '^#/' < "$0" | cut -c 4-
 }
 
+# set default values
+FULL_SCAN="false"
 ADDITIONAL_OPTIONS=""
+VERBOSE_MODE="false"
 
-for arg in "$@"
-do
-  case $arg in
-    -h|--help)
-      usage
-      exit 2
-      ;;
-    -f|--full)
-      FULL_SCAN="true"
-      shift
-      ;;
-    -o|--options)
-      ADDITIONAL_OPTIONS="$2"
-      shift
-      shift
-      ;;
-    *)
-      shift
-      ;;
-  esac
+# read the options
+TEMP=$(getopt -o vf:o: --long verbose,full,options: -n "$0" -- "$@")
+eval set -- "$TEMP"
+
+# extract options and their arguments into variables.
+while true ; do
+    case "$1" in
+        -v|--verbose)
+            VERBOSE_MODE="true"; shift ;;
+        -f|--full)
+            FULL_SCAN="true"; shift ;;
+        -o|--options)
+            case "$2" in
+                "") shift 2 ;;
+                *) ADDITIONAL_OPTIONS="$2"; shift 2 ;;
+            esac ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
 done
 
 /usr/bin/freshclam
