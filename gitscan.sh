@@ -93,7 +93,7 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   current_object=0
 
   progress "Scanning all git objects (Total: $total_objects)..."
-  for object in ${objects}; do
+  echo "$objects" | while read -r object; do
     current_object=$((current_object + 1))
     progress "Scanning object $current_object of $total_objects..."
     
