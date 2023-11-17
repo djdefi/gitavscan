@@ -86,22 +86,21 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
 
   REPO=$(pwd)
 
-  # Process all blobs
-  blobs=$(git rev-list --objects --all)
-  echo "Inspecting $blobs blobs..."
-  
-  for blob in ${blobs}; do
-    objtype=$(git cat-file -t ${blob})
-    if [[ ${objtype} == "blob" ]]; then
-      output=$(${SCRIPT} <(git cat-file blob ${blob}))
+  # Get a list of all objects (blobs, trees, commits, etc.)
+  objects=$(git rev-list --objects --all)
+
+  # Process each object
+  for object in ${objects}; do
+    # Check if the object is a blob
+    if [[ $(git cat-file -t "$object" 2>/dev/null) == "blob" ]]; then
+      # It's a blob, proceed with scanning
+      output=$(${SCRIPT} <(git cat-file blob "$object"))
       if [ $? -ne 0 ]; then
-        echo "Error scanning blob: ${blob}"
+        echo "Error scanning blob: ${object}"
       elif echo "${output}" | grep -q "FOUND"; then
-        echo "Found malicious file in blob ${blob}"
+        echo "Found malicious file in blob ${object}"
         echo "${output}"
       fi
-    else
-      echo "Skipping non-blob object: ${blob}"
     fi
   done
 fi
