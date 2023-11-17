@@ -79,18 +79,23 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   git clone $REPO 2> /dev/null 1>&2
   cd $(basename $REPO)
 
-  # count commits 
-  revs=$(git rev-list --all --remotes --pretty | grep ^commit\ | sed "s;commit ;;" | wc -l)
+  # count blobs
+  blobs=$(git rev-list --objects --all --filter=tree:0 | wc -l)
   count=1
-  echo "Inspecting $revs revisions..."
+  echo "Inspecting $blobs blobs..."
 
   # scan all
-  for F in $(git rev-list --all --remotes --pretty | grep ^commit\ | sed "s;commit ;;"); do
-    echo "Scanning commit $count of $revs: $F"
-    git checkout $F 2> /dev/null 1>&2
-    output=$($SCRIPT $EXCLUDE)
+  for blob in $(git rev-list --objects --all --filter=tree:0); do
+    echo "Scanning blob $count of $blobs: $blob"
+    git cat-file -p $blob 2> /dev/null 1>&2
+    
+    # Use grep to verify that this is indeed a blob and not a tree or commit
+    if [ $(git cat-file -t $blob) = "blob" ]; then
+      output=$($SCRIPT)
+    fi
+    
     if echo "$output" | grep -q "FOUND"; then
-      echo "Found malicious file in ref $F" | tee -a /output.txt
+      echo "Found malicious file in blob $blob" | tee -a /output.txt
       echo "$output" | tee -a /output.txt
     fi
     (( count++ ))
