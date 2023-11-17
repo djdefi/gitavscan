@@ -69,7 +69,7 @@ REPO=$(pwd)
 echo "Scanning working and .git directories..."
 output=$($SCRIPT 2>&1)
 if [ $? -ne 0 ]; then
-  echo "ClamScan Error: $output"
+  echo "ClamScan Output: $output"
 else
   if echo "$output" | grep -q "FOUND"; then
     echo "Found malicious file in ref $(git rev-parse HEAD)"
