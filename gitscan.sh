@@ -91,7 +91,9 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
     
     # Use grep to verify that this is indeed a blob and not a tree or commit
     if [ $(git cat-file -t $blob) = "blob" ]; then
-      output=$($SCRIPT)
+      git cat-file -p $blob > $TMP/blob
+      output=$($SCRIPT $TMP/blob)
+      rm $TMP/blob
     fi
     
     if echo "$output" | grep -q "FOUND"; then
