@@ -47,7 +47,7 @@ while true ; do
                 *) ADDITIONAL_OPTIONS="$2"; shift 2 ;;
             esac ;;
         --) shift ; break ;;
-        *) echo "Internal error!" ; usage; exit 1 ;;
+        *) echo "Invalid option: $1"; usage; exit 1 ;;
     esac
 done
 
