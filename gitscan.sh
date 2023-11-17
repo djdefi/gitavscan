@@ -78,13 +78,13 @@ else
 fi
 
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
-  TMP=$(mktemp -d -q)
-  if ! git clone $REPO $TMP/cloned_repo 2>&1; then
-    echo "Failed to clone repository: $REPO"
+  # Ensure we are in a Git repository
+  if ! [ -d ".git" ]; then
+    echo "ERROR: Not a git repository, cannot perform full scan."
     exit 1
   fi
 
-  pushd $TMP/cloned_repo > /dev/null 2>&1
+  REPO=$(pwd)
 
   # Process all blobs
   blobs=$(git rev-list --objects --all)
@@ -104,9 +104,6 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
       echo "Skipping non-blob object: ${blob}"
     fi
   done
-
-  popd > /dev/null
-  rm -rf $TMP
 fi
 
 if [ -s "/output.txt" ]; then
