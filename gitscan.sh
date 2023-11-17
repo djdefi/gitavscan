@@ -85,7 +85,7 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   echo "Inspecting $blobs blobs..."
 
   # scan all
-  for blob in $(git rev-list --objects --all --filter=tree:0); do
+  for blob in $(git rev-list --objects --all); do
     echo "Scanning blob $count of $blobs: $blob"
     git cat-file -p $blob 2> /dev/null 1>&2
     
