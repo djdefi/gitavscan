@@ -53,7 +53,7 @@ jobs:
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
           
-      - name: Create an unreachable commit with virus 
+      - name: Setup Git
         run: |
           # Setup Git
           git config --global user.email "gitavscan@example.com"
