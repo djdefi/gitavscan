@@ -88,7 +88,7 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   fi
 
   # Get a list of all objects (blobs, trees, commits, etc.)
-  objects=$(git rev-list --objects --all)
+  objects=$(git rev-list --objects --all --unreachable)
   total_objects=$(echo "$objects" | wc -l)
   current_object=0
 
