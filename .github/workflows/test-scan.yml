@@ -35,10 +35,6 @@ jobs:
       
       - name: Build image
         run: docker build -t gitavscan .
-      
-      - name: Run full scan
-        run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --full | grep "Win.Test.EICAR_HDB-1 FOUND"
 
       - name: Run basic scan
         run: |
@@ -52,3 +48,23 @@ jobs:
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
+          
+      - name: Create an unreachable commit with virus 
+        run: |
+          # Create a new orphan branch 
+          git checkout --orphan temp_branch 
+      
+          # Add a virus file to the branch and commit it
+          git add eicar.com.txt
+          git commit -m "Add virus to an orphan branch"
+      
+          # Delete the orphan branch which makes the commit unreachable 
+          git checkout main
+          git branch -D temp_branch
+
+          # Delete the test viruses
+          rm -rf eicar.com*
+
+      - name: Run full scan
+        run: |
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --full | grep "Win.Test.EICAR_HDB-1 FOUND"
