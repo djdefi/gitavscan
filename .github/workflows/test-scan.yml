@@ -38,7 +38,7 @@ jobs:
 
       - name: Run basic scan
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh > scan_results.txt
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh | tee -a scan_results.txt
       
       - name: Check scan results
         run: |
