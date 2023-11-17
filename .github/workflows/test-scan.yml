@@ -55,16 +55,15 @@ jobs:
           git config --global user.email "gitavscan@example.com"
           git config --global user.name "Evil Git"
           
-          # Create a new orphan branch 
-          git checkout --orphan temp_branch 
-      
-          # Add a virus file to the branch and commit it
-          git add eicar.com.txt
-          git commit -m "Add virus to an orphan branch"
-      
-          # Delete the orphan branch which makes the commit unreachable 
-          git checkout main
-          git branch -D temp_branch
+      - name: Create unreachable commit
+        run: |
+          # This will create a blob from the file and print the SHA1 hash of the created blob
+          blob=$(git hash-object -w eicar_com.zip) 
+          # This will create a new tree with the blob
+          tree=$(echo "100644 blob $blob\tunreachable-virus" | git mktree)
+          # This creates a new commit with the tree
+          commit=$(git commit-tree $tree -m "Add an unreachable commit with a virus")
+          echo "Unreachable commit with a virus created: $commit"
 
           # Delete the test viruses
           rm -rf eicar.com*
