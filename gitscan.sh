@@ -78,17 +78,13 @@ else
 fi
 
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
-  # Create a bundle of the entire repository including unreachable objects
-  BUNDLE_FILE=$(mktemp)
-  git bundle create "$BUNDLE_FILE" --all
-
-  # Clone from the bundle
-  pushd $TMP > /dev/null 2>&1
-  if ! git clone "$BUNDLE_FILE" cloned_repo 2>&1; then
-    echo "Failed to clone from bundle"
+  TMP=$(mktemp -d -q)
+  if ! git clone $REPO $TMP/cloned_repo 2>&1; then
+    echo "Failed to clone repository: $REPO"
     exit 1
   fi
-  cd cloned_repo
+
+  pushd $TMP/cloned_repo > /dev/null 2>&1
 
   # Process all blobs
   blobs=$(git rev-list --objects --all)
@@ -111,7 +107,6 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
 
   popd > /dev/null
   rm -rf $TMP
-  rm "$BUNDLE_FILE"
 fi
 
 if [ -s "/output.txt" ]; then
