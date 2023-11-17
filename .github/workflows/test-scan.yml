@@ -70,7 +70,7 @@ jobs:
           echo "Unreachable commit with a virus created: $commit"
             
           # Delete the test viruses
-          rm -rf eicar.com*
+          rm -rf eicar*
 
       - name: Run full scan
         run: |
