@@ -26,6 +26,10 @@ usage() {
   grep '^#/' < "$0" | cut -c 4-
 }
 
+progress() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
 # set default values
 FULL_SCAN="false"
 ADDITIONAL_OPTIONS=""
@@ -54,7 +58,7 @@ done
 
 /usr/bin/freshclam
 
-echo "Beginning scan..."
+progress "Beginning scan..."
 
 if ! [ -d ".git" ]; then
   echo "ERROR: Not a git repository, skipping history scan."
@@ -63,11 +67,10 @@ fi
 
 EXCLUDE="--exclude=/.git"
 SCRIPT="/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS"
-TMP=$(mktemp -d -q)
 REPO=$(pwd)
 
-echo "Scanning working and .git directories..."
-output=$($SCRIPT 2>&1)
+progress "Scanning working and .git directories..."
+output=$($SCRIPT "$REPO" 2>&1)
 if [ $? -ne 0 ]; then
   echo "ClamScan Output: $output"
 else
@@ -84,16 +87,18 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
     exit 1
   fi
 
-  REPO=$(pwd)
-
   # Get a list of all objects (blobs, trees, commits, etc.)
   objects=$(git rev-list --objects --all)
+  total_objects=$(echo "$objects" | wc -l)
+  current_object=0
 
-  # Process each object
+  progress "Scanning all git objects (Total: $total_objects)..."
   for object in ${objects}; do
+    current_object=$((current_object + 1))
+    progress "Scanning object $current_object of $total_objects..."
+    
     # Check if the object is a blob
     if [[ $(git cat-file -t "$object" 2>/dev/null) == "blob" ]]; then
-      # It's a blob, proceed with scanning
       output=$(${SCRIPT} <(git cat-file blob "$object"))
       if [ $? -ne 0 ]; then
         echo "Error scanning blob: ${object}"
@@ -105,18 +110,19 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   done
   
   # Find and scan unreachable objects
-  echo "Scanning for unreachable objects..."
+  progress "Scanning for unreachable objects..."
   unreachable_objects=$(git fsck --unreachable | awk '/blob/ {print $3}')
   for object in $unreachable_objects; do
     git cat-file -p $object | $SCRIPT
   done
 
+  progress "Completed scanning for unreachable objects."
 fi
 
 if [ -s "/output.txt" ]; then
-  echo "Scan finished with detections $(date)"
+  progress "Scan finished with detections"
   cat /output.txt
   exit 1
 else
-  echo "Scan finished without detections $(date)"
+  progress "Scan finished without detections"
 fi
