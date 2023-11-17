@@ -57,15 +57,18 @@ jobs:
           
       - name: Create unreachable commit
         run: |
-          # This will create a blob from the file and print the SHA1 hash of the created blob
+          # These commands will create a blob from the file and print the SHA1 hash of the created blob
           blob=$(git hash-object -w eicar_com.zip) 
           echo $blob
-          # This will create a new tree with the blob
-          tree=$(echo -e "100644 blob $blob unreachable-virus" | git mktree)
-          # This creates a new commit with the tree
+          
+          # These commands will create a new tree with the blob, please note the '\t' which is the tab character between blob and filename.
+          tree=$(echo -e "100644 blob $blob\tunreachable-virus" | git mktree)
+          
+          # This command creates a new commit with the tree
           commit=$(git commit-tree $tree -m "Add an unreachable commit with a virus")
+          
           echo "Unreachable commit with a virus created: $commit"
-
+            
           # Delete the test viruses
           rm -rf eicar.com*
 
