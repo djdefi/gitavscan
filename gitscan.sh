@@ -113,6 +113,7 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   progress "Scanning for unreachable objects..."
   unreachable_objects=$(git fsck --unreachable | awk '/blob/ {print $3}')
   for object in $unreachable_objects; do
+    echo "Scanning unreachable object: $object"
     git cat-file -p $object | $SCRIPT
   done
 
