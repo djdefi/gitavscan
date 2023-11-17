@@ -103,6 +103,14 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
       fi
     fi
   done
+  
+  # Find and scan unreachable objects
+  echo "Scanning for unreachable objects..."
+  unreachable_objects=$(git fsck --unreachable | awk '/blob/ {print $3}')
+  for object in $unreachable_objects; do
+    git cat-file -p $object | $SCRIPT
+  done
+
 fi
 
 if [ -s "/output.txt" ]; then
