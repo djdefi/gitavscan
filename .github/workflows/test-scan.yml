@@ -13,13 +13,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      
+      - name: Setup Git
+        run: |
+          git config --global user.email "gitavscan@example.com"
+          git config --global user.name "Evil Git"
+          
       - name: Download EICAR test files
         run: |
           wget "https://secure.eicar.org/eicar.com.txt"
           wget "https://secure.eicar.org/eicar.com"
           wget "https://secure.eicar.org/eicar_com.zip"
           wget "https://secure.eicar.org/eicarcom2.zip"
+          git add .
+          git commit -m "Add EICAR test files"
       
       - name: Build image
         run: docker build -t gitavscan .
@@ -40,23 +47,21 @@ jobs:
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
-          
-      - name: Setup Git
-        run: |
-          git config --global user.email "gitavscan@example.com"
-          git config --global user.name "Evil Git"
-          
+            
       - name: Create unreachable commit
         id: create_unreachable
         run: |
-          blob=$(git hash-object -w eicar_com.zip) 
-          echo "Blob SHA: $blob"
+          blob_txt=$(git hash-object -w eicar.com.txt) 
+          blob_com=$(git hash-object -w eicar.com) 
+          blob_zip=$(git hash-object -w eicar_com.zip) 
+          blob_zip2=$(git hash-object -w eicarcom2.zip) 
           
-          tree=$(echo -e "100644 blob $blob\tunreachable-virus" | git mktree)
-          echo "Tree SHA: $tree"
+          tree=$(echo -e "100644 blob $blob_txt\tunreachable-virus.txt
+          100644 blob $blob_com\tunreachable-virus.com
+          100644 blob $blob_zip\tunreachable-virus.zip
+          100644 blob $blob_zip2\tunreachable-virus2.zip" | git mktree)
           
-          commit=$(git commit-tree $tree -m "Add an unreachable commit with a virus")
-          echo "Unreachable commit with a virus created: $commit"
+          commit=$(git commit-tree $tree -m "Add an unreachable commit with viruses")
           echo "::set-output name=SHA_HASH::$commit"
           
           rm -rf eicar*
