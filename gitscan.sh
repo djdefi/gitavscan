@@ -79,28 +79,19 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   git clone $REPO 2> /dev/null 1>&2
   cd $(basename $REPO)
 
-  # count blobs
-  blobs=$(git rev-list --objects --all --filter=tree:0 | wc -l)
-  count=1
+  # Process blobs
+  blobs=$(git rev-list --objects --all --filter=blob)
   echo "Inspecting $blobs blobs..."
-
-  # scan all
-  for blob in $(git rev-list --objects --all); do
-    echo "Scanning blob $count of $blobs: $blob"
-    git cat-file -p $blob 2> /dev/null 1>&2
-    
-    # Use grep to verify that this is indeed a blob and not a tree or commit
-    if [ $(git cat-file -t $blob) = "blob" ]; then
-      git cat-file -p $blob > $TMP/blob
-      output=$($SCRIPT $TMP/blob)
-      rm $TMP/blob
+  
+  for blob in ${blobs}; do
+    objtype=$(git cat-file -t ${blob})
+    if [[ ${objtype} == "blob" ]]; then
+      output=$(${SCRIPT} <(git cat-file blob ${blob}))
+      if echo "${output}" | grep -q "FOUND"; then
+        echo "Found malicious file in blob ${blob}" | tee -a /output.txt
+        echo "${output}" | tee -a /output.txt
+      fi
     fi
-    
-    if echo "$output" | grep -q "FOUND"; then
-      echo "Found malicious file in blob $blob" | tee -a /output.txt
-      echo "$output" | tee -a /output.txt
-    fi
-    (( count++ ))
   done
 
   popd > /dev/null
