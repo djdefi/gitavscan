@@ -31,7 +31,8 @@ ADDITIONAL_OPTIONS=""
 VERBOSE_MODE="false"
 
 # read the options
-TEMP=$(getopt -o vf:o: --long verbose,full,options: -n "$0" -- "$@")
+# read the options
+TEMP=$(getopt -o vf:o: --long verbose,full,options: -n "$0" -- "$@") || { usage; exit 1; }
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
