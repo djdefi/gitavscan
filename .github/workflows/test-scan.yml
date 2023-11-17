@@ -78,4 +78,9 @@ jobs:
 
       - name: Run full scan
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --full | grep "Win.Test.EICAR_HDB-1 FOUND"
+          docker run --rm -t -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --full | tee scan_results.txt
+
+      - name: Check scan results for EICAR test
+        run: |
+          grep "Win.Test.EICAR_HDB-1 FOUND" scan_results.txt
+        
