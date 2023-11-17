@@ -51,6 +51,10 @@ jobs:
           
       - name: Create an unreachable commit with virus 
         run: |
+          # Setup Git
+          git config --global user.email "gitavscan@example.com"
+          git config --global user.name "Evil Git"
+          
           # Create a new orphan branch 
           git checkout --orphan temp_branch 
       
