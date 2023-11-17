@@ -67,9 +67,9 @@ TMP=$(mktemp -d -q)
 REPO=$(pwd)
 
 echo "Scanning working and .git directories..."
-output=$($SCRIPT)
+output=$($SCRIPT 2>&1)
 if [ $? -ne 0 ]; then
-  echo "Error during scanning working and .git directories"
+  echo "ClamScan Error: $output"
 else
   if echo "$output" | grep -q "FOUND"; then
     echo "Found malicious file in ref $(git rev-parse HEAD)"
