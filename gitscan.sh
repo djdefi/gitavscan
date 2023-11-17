@@ -80,7 +80,7 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   cd $(basename $REPO)
 
   # Process blobs
-  blobs=$(git rev-list --objects --all --filter=blob)
+  blobs=$(git rev-list --objects --all --filter=blob:limit=100k)
   echo "Inspecting $blobs blobs..."
   
   for blob in ${blobs}; do
