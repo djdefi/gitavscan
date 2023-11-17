@@ -51,4 +51,4 @@ jobs:
       - name: Test unknown option
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
-          echo "$output" | grep "Usage:"
+          echo "$output" | grep "OPTIONS:"
