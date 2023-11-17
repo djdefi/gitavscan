@@ -118,6 +118,25 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   done
 
   progress "Completed scanning for unreachable objects."
+
+  # Filesystem object scan
+  GIT_DIR=$(git rev-parse --git-dir)
+  for object in $(find "$GIT_DIR/objects/" -type f); do
+     # reconstruct the hash
+     hash=$(echo "$object" | sed -e "s|$GIT_DIR/objects/||" -e 's|/||')
+     
+     # check if it's a blob
+     if [[ $(git cat-file -t "$hash" 2>/dev/null) == "blob" ]]; then
+       output=$(${SCRIPT} <(git cat-file blob "$hash"))
+       if [ $? -ne 0 ]; then
+         echo "Error scanning blob: ${hash}"
+       elif echo "${output}" | grep -q "FOUND"; then
+         echo "Found malicious file in blob ${hash}"
+         echo "${output}"
+       fi
+     fi
+  done
+
 fi
 
 if [ -s "/output.txt" ]; then
