@@ -5,7 +5,8 @@ CMD ["/gitscan.sh"]
 
 RUN apk add --no-cache --update clamav-libunrar freshclam clamav-scanner \
     bash dumb-init \
-    git 
+    git
+RUN git config --global --add safe.directory /scandir
 RUN freshclam
 
 COPY gitscan.sh /
