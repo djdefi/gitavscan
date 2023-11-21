@@ -45,7 +45,8 @@ while true ; do
         -o|--options)
             case "$2" in
                 "") shift 2 ;;
-                *) ADDITIONAL_OPTIONS="$2"; shift 2 ;;
+                # Prepend '--options' to the additional options
+                *) ADDITIONAL_OPTIONS="--options $2"; shift 2 ;;
             esac ;;
         --) shift ; break ;;
         *) echo "Invalid option: $1"; usage; exit 1 ;;
