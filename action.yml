@@ -5,6 +5,9 @@ inputs:
   full:  
     description: 'Full history scan'
     required: false
+  options:
+    description: 'Additional options for clamscan command'
+    required: false
 runs:
   using: 'docker'
   image: 'docker://ghcr.io/djdefi/gitavscan:nightly'
