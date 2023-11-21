@@ -11,4 +11,4 @@ jobs:
     - name: Git AV Scan
       uses: djdefi/gitavscan@main
       with:
-        options: '--max-filesize=1M'
+        options: '--options --max-filesize=1M'
