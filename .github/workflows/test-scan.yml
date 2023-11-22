@@ -55,5 +55,5 @@ jobs:
 
       - name: Test output generation
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--infected --recursive --verbose --log=scan-result.txt"
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--log=scan-result.txt"
           cat scan-result.txt
