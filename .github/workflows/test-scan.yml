@@ -52,3 +52,8 @@ jobs:
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
+
+      - name: Test SARIF output generatin
+        run: |
+          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--infected --recursive --sarif=file.sarif"
+          cat file.sarif
