@@ -37,7 +37,7 @@ UNOFFICIAL_SIGS="false"
 
 # read the options
 # read the options
-TEMP=$(getopt -o hvfu:o: --long help,verbose,full,unofficial-sigs,options: -n "$0" -- "$@") || { usage; exit 1; }
+TEMP=$(getopt -o hvfuo: --long help,verbose,full,unofficial-sigs,options: -n "$0" -- "$@") || { usage; exit 1; }
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
