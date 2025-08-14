@@ -89,12 +89,49 @@ LogTime yes
 DatabaseDirectory /var/lib/clamav
 MaxAttempts 5
 EOF
-    /usr/bin/freshclam --config-file=/tmp/freshclam.conf
+    echo "Downloading official and unofficial signatures..."
+    if /usr/bin/freshclam --config-file=/tmp/freshclam.conf; then
+        echo "Signatures downloaded successfully."
+        
+        # Verify unofficial signatures were downloaded
+        echo "Verifying unofficial signatures are available..."
+        unofficial_count=0
+        for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+            if [ -f "/var/lib/clamav/$sig" ]; then
+                echo "  ✓ Found unofficial signature: $sig"
+                ((unofficial_count++))
+            else
+                echo "  ✗ Missing unofficial signature: $sig"
+            fi
+        done
+        
+        if [ $unofficial_count -gt 0 ]; then
+            echo "Successfully downloaded $unofficial_count unofficial signature files."
+        else
+            echo "WARNING: No unofficial signatures were downloaded. Proceeding with official signatures only."
+        fi
+    else
+        echo "WARNING: Failed to download signatures with custom configuration. Falling back to official signatures only."
+        /usr/bin/freshclam
+    fi
 else
+    echo "Downloading official signatures only..."
     /usr/bin/freshclam
 fi
 
 echo "Beginning scan..."
+
+# Show loaded signatures information
+echo "Checking loaded signatures..."
+if command -v clamscan >/dev/null 2>&1; then
+    signature_count=$(find /var/lib/clamav -name "*.cvd" -o -name "*.cld" -o -name "*.ndb" -o -name "*.ftm" 2>/dev/null | wc -l)
+    echo "Total signature files in database: $signature_count"
+    
+    if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
+        unofficial_files=$(find /var/lib/clamav -name "*.ndb" -o -name "*.ftm" 2>/dev/null | grep -E "(badmacro|blurl|junk|jurlbl|jurlbla|lott|malware|phish|rogue|sanesecurity)" | wc -l)
+        echo "Unofficial signature files detected: $unofficial_files"
+    fi
+fi
 
 if ! [ -d ".git" ]; then
   echo "ERROR: Not a git repository, skipping history scan."
