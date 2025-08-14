@@ -16,6 +16,16 @@ with:
   full: '--full'
 ```
 
+### Using unofficial ClamAV signatures
+
+Enable download of unofficial ClamAV signatures for enhanced detection:
+
+```
+uses: djdefi/gitavscan@main
+with:
+  unofficial-sigs: '--unofficial-sigs'
+```
+
 ## Example workflow
 
 Deep history scan. Scans each commit in the repository history. Slow but thorough:
@@ -50,7 +60,26 @@ jobs:
     - uses: actions/checkout@v3
     - name: Git AV Scan
       uses: djdefi/gitavscan@main
-``` 
+```  
+
+### Using unofficial ClamAV signatures
+
+Scan with unofficial signatures from SaneSecurity and other trusted sources for enhanced malware detection:
+
+```yaml
+on: [push]
+
+jobs:
+  gitavscan:
+    runs-on: ubuntu-latest
+    name: Enhanced AV Scan
+    steps:
+    - uses: actions/checkout@v3
+    - name: Git AV Scan with Unofficial Signatures
+      uses: djdefi/gitavscan@main
+      with:
+        unofficial-sigs: '--unofficial-sigs'
+```
 
 ### Passing options to `clamscan`
 
@@ -84,4 +113,10 @@ Run full scan:
 
 ```shell
 docker run --rm -it -v /path/to/repo:/scandir gitavscan --full
+```
+
+Run scan with unofficial signatures:
+
+```shell
+docker run --rm -it -v /path/to/repo:/scandir gitavscan --unofficial-sigs
 ```

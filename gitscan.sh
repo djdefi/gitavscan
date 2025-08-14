@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-#/ Usage: gitscan.sh [--full] [--options "OPTIONS"]
+#/ Usage: gitscan.sh [--full] [--unofficial-sigs] [--options "OPTIONS"]
 #/
 #/ Scan the latest commit, or the full history of a Git repository.
 #/
 #/ OPTIONS:
 #/   -h | --help                      Show this message.
 #/   -f | --full                      Full history scan.      
+#/   -u | --unofficial-sigs           Download unofficial ClamAV signatures.
 #/   -o | --options "OPTIONS"         Additional options for clamscan command.
 #/
 #/ EXAMPLES: 
@@ -15,6 +16,9 @@
 #/
 #/    Scan the entire history.
 #/      $ gitscan.sh --full
+#/    
+#/    Scan with unofficial signatures.
+#/      $ gitscan.sh --unofficial-sigs
 #/    
 #/    Scan with additional clamscan options.
 #/      $ gitscan.sh --options "--max-filesize=1M"
@@ -29,19 +33,24 @@ usage() {
 FULL_SCAN="false"
 ADDITIONAL_OPTIONS=""
 VERBOSE_MODE="false"
+UNOFFICIAL_SIGS="false"
 
 # read the options
 # read the options
-TEMP=$(getopt -o vf:o: --long verbose,full,options: -n "$0" -- "$@") || { usage; exit 1; }
+TEMP=$(getopt -o hvfu:o: --long help,verbose,full,unofficial-sigs,options: -n "$0" -- "$@") || { usage; exit 1; }
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
 while true ; do
     case "$1" in
+        -h|--help)
+            usage; exit 0 ;;
         -v|--verbose)
             VERBOSE_MODE="true"; shift ;;
         -f|--full)
             FULL_SCAN="true"; shift ;;
+        -u|--unofficial-sigs)
+            UNOFFICIAL_SIGS="true"; shift ;;
         -o|--options)
             case "$2" in
                 "") shift 2 ;;
@@ -53,7 +62,37 @@ while true ; do
     esac
 done
 
-/usr/bin/freshclam
+# Configure freshclam for unofficial signatures if requested
+if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
+    echo "Configuring unofficial ClamAV signatures..."
+    cat > /tmp/freshclam.conf << 'EOF'
+# Official ClamAV database mirror
+DatabaseMirror db.local.clamav.net
+DatabaseMirror database.clamav.net
+
+# Unofficial signatures from SaneSecurity
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/badmacro.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/blurl.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/junk.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/jurlbl.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/jurlbla.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/lott.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/malware.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/phish.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/rogue.ndb
+DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/sanesecurity.ftm
+
+# Update settings
+UpdateLogFile /var/log/freshclam.log
+LogFileMaxSize 50M
+LogTime yes
+DatabaseDirectory /var/lib/clamav
+MaxAttempts 5
+EOF
+    /usr/bin/freshclam --config-file=/tmp/freshclam.conf
+else
+    /usr/bin/freshclam
+fi
 
 echo "Beginning scan..."
 
