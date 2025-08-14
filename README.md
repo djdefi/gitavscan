@@ -18,13 +18,19 @@ with:
 
 ### Using unofficial ClamAV signatures
 
-Enable download of unofficial ClamAV signatures for enhanced detection:
+Enable unofficial ClamAV signatures for enhanced detection. Unofficial signatures from trusted sources like SaneSecurity are pre-packaged in the Docker image and updated opportunistically:
 
 ```
 uses: djdefi/gitavscan@main
 with:
   unofficial-sigs: '--unofficial-sigs'
 ```
+
+**How it works:**
+- Unofficial signatures are pre-downloaded during Docker image build for reliability
+- When `--unofficial-sigs` is used, the tool attempts to update these signatures to the latest versions
+- If updates fail (due to network issues), the pre-packaged signatures are still used
+- This ensures consistent operation even in restricted network environments
 
 ## Example workflow
 
@@ -64,7 +70,7 @@ jobs:
 
 ### Using unofficial ClamAV signatures
 
-Scan with unofficial signatures from SaneSecurity and other trusted sources for enhanced malware detection:
+Scan with unofficial signatures from SaneSecurity and other trusted sources for enhanced malware detection. Signatures are pre-packaged and updated opportunistically:
 
 ```yaml
 on: [push]
@@ -120,3 +126,5 @@ Run scan with unofficial signatures:
 ```shell
 docker run --rm -it -v /path/to/repo:/scandir gitavscan --unofficial-sigs
 ```
+
+**Note:** Unofficial signatures are pre-packaged in the image and updated opportunistically when `--unofficial-sigs` is used.

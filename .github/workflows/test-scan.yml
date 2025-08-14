@@ -60,10 +60,10 @@ jobs:
       
       - name: Test unofficial signatures functionality
         run: |
-          echo "Testing unofficial signatures download and verification..."
+          echo "Testing unofficial signatures functionality..."
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unofficial-sigs || true)
           echo "$output"
-          # Check that unofficial signatures configuration was attempted
-          echo "$output" | grep "Configuring unofficial ClamAV signatures"
-          # Check that signature verification was attempted  
-          echo "$output" | grep "Verifying unofficial signatures are available"
+          # Check that unofficial signatures update was attempted
+          echo "$output" | grep "Attempting to update unofficial signatures"
+          # Check that signature status is reported  
+          echo "$output" | grep "Checking unofficial signature status"

@@ -6,7 +6,7 @@
 #/ OPTIONS:
 #/   -h | --help                      Show this message.
 #/   -f | --full                      Full history scan.      
-#/   -u | --unofficial-sigs           Download unofficial ClamAV signatures.
+#/   -u | --unofficial-sigs           Enable unofficial ClamAV signatures (updates them opportunistically).
 #/   -o | --options "OPTIONS"         Additional options for clamscan command.
 #/
 #/ EXAMPLES: 
@@ -63,59 +63,46 @@ while true ; do
     esac
 done
 
-# Configure freshclam for unofficial signatures if requested
+# Update signatures
+echo "Updating ClamAV signatures..."
+/usr/bin/freshclam
+
+# Handle unofficial signatures based on flag
 if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
-    echo "Configuring unofficial ClamAV signatures..."
-    cat > /tmp/freshclam.conf << 'EOF'
-# Official ClamAV database mirror
-DatabaseMirror db.local.clamav.net
-DatabaseMirror database.clamav.net
-
-# Unofficial signatures from SaneSecurity
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/badmacro.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/blurl.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/junk.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/jurlbl.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/jurlbla.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/lott.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/malware.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/phish.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/rogue.ndb
-DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/sanesecurity.ftm
-
-# Update settings  
-LogTime yes
-DatabaseDirectory /var/lib/clamav
-MaxAttempts 5
-EOF
-    echo "Downloading official and unofficial signatures..."
-    if /usr/bin/freshclam --config-file=/tmp/freshclam.conf; then
-        echo "Signatures downloaded successfully."
-        
-        # Verify unofficial signatures were downloaded
-        echo "Verifying unofficial signatures are available..."
-        unofficial_count=0
-        for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
-            if [ -f "/var/lib/clamav/$sig" ]; then
-                echo "  ✓ Found unofficial signature: $sig"
-                ((unofficial_count++))
-            else
-                echo "  ✗ Missing unofficial signature: $sig"
-            fi
-        done
-        
-        if [ $unofficial_count -gt 0 ]; then
-            echo "Successfully downloaded $unofficial_count unofficial signature files."
+    echo "Attempting to update unofficial signatures..."
+    cd /var/lib/clamav
+    updated_count=0
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        echo "Updating $sig..."
+        if curl -f -s -o "${sig}.tmp" "https://mirror.rollernet.us/sanesecurity/$sig" && mv "${sig}.tmp" "$sig"; then
+            echo "  ✓ Updated $sig"
+            ((updated_count++))
         else
-            echo "WARNING: No unofficial signatures were downloaded. Proceeding with official signatures only."
+            echo "  ✗ Failed to update $sig (using existing version)"
+            rm -f "${sig}.tmp"
         fi
+    done
+    
+    if [ $updated_count -gt 0 ]; then
+        echo "Successfully updated $updated_count unofficial signature files."
     else
-        echo "WARNING: Failed to download signatures with custom configuration. Falling back to official signatures only."
-        /usr/bin/freshclam
+        echo "No unofficial signatures could be updated, using existing versions."
     fi
+    
+    # Ensure unofficial signatures are active (in case they were disabled previously)
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        if [ -f "/var/lib/clamav/${sig}.disabled" ]; then
+            mv "/var/lib/clamav/${sig}.disabled" "/var/lib/clamav/$sig"
+        fi
+    done
 else
-    echo "Downloading official signatures only..."
-    /usr/bin/freshclam
+    echo "Unofficial signatures disabled. Moving them aside..."
+    cd /var/lib/clamav
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        if [ -f "/var/lib/clamav/$sig" ]; then
+            mv "/var/lib/clamav/$sig" "/var/lib/clamav/${sig}.disabled"
+        fi
+    done
 fi
 
 echo "Beginning scan..."
@@ -126,9 +113,28 @@ if command -v clamscan >/dev/null 2>&1; then
     signature_count=$(find /var/lib/clamav -name "*.cvd" -o -name "*.cld" -o -name "*.ndb" -o -name "*.ftm" 2>/dev/null | wc -l)
     echo "Total signature files in database: $signature_count"
     
+    # Show unofficial signature status
+    echo "Checking unofficial signature status..."
+    unofficial_active=0
+    unofficial_available=0
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        if [ -f "/var/lib/clamav/$sig" ]; then
+            echo "  ✓ Active: $sig"
+            ((unofficial_active++))
+            ((unofficial_available++))
+        elif [ -f "/var/lib/clamav/${sig}.disabled" ]; then
+            echo "  - Available but disabled: $sig"
+            ((unofficial_available++))
+        else
+            echo "  ✗ Missing: $sig"
+        fi
+    done
+    
+    echo "Unofficial signatures: $unofficial_active active, $unofficial_available available"
     if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
-        unofficial_files=$(find /var/lib/clamav -name "*.ndb" -o -name "*.ftm" 2>/dev/null | grep -E "(badmacro|blurl|junk|jurlbl|jurlbla|lott|malware|phish|rogue|sanesecurity)" | wc -l)
-        echo "Unofficial signature files detected: $unofficial_files"
+        echo "Unofficial signatures are enabled for this scan."
+    else
+        echo "Unofficial signatures are disabled for this scan (use --unofficial-sigs to enable)."
     fi
 fi
 
