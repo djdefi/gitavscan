@@ -34,6 +34,7 @@ FULL_SCAN="false"
 ADDITIONAL_OPTIONS=""
 VERBOSE_MODE="false"
 UNOFFICIAL_SIGS="false"
+DETECTIONS_FOUND="false"
 
 # read the options
 # read the options
@@ -82,9 +83,7 @@ DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/phish.ndb
 DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/rogue.ndb
 DatabaseCustomURL https://mirror.rollernet.us/sanesecurity/sanesecurity.ftm
 
-# Update settings
-UpdateLogFile /var/log/freshclam.log
-LogFileMaxSize 50M
+# Update settings  
 LogTime yes
 DatabaseDirectory /var/lib/clamav
 MaxAttempts 5
@@ -146,8 +145,9 @@ REPO=$(pwd)
 echo "Scanning working and .git directories..."
 output=$($SCRIPT)
   if echo "$output" | grep -q "FOUND"; then
-    echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
-    echo "$output" | tee -a /output.txt
+    DETECTIONS_FOUND="true"
+    echo "Found malicious file in ref $(git rev-parse HEAD)"
+    echo "$output"
   fi
 
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
@@ -167,8 +167,9 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
     git checkout $F 2> /dev/null 1>&2
     output=$($SCRIPT $EXCLUDE)
     if echo "$output" | grep -q "FOUND"; then
-      echo "Found malicious file in ref $F" | tee -a /output.txt
-      echo "$output" | tee -a /output.txt
+      DETECTIONS_FOUND="true"
+      echo "Found malicious file in ref $F"
+      echo "$output"
     fi
     (( count++ ))
   done
@@ -178,9 +179,8 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   rm -rf $TMP
 fi
 
-if [ -s "/output.txt" ]; then
+if [[ "${DETECTIONS_FOUND}" = "true" ]]; then
   echo "Scan finished with detections $(date)"
-  cat /output.txt
   exit 1
 fi
 
