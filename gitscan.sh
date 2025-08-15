@@ -69,24 +69,42 @@ echo "Updating ClamAV signatures..."
 
 # Handle unofficial signatures based on flag
 if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
-    echo "Attempting to update unofficial signatures..."
+    echo "Managing unofficial signatures..."
     cd /var/lib/clamav
     updated_count=0
+    downloaded_count=0
+    
     for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
-        echo "Updating $sig..."
-        if curl -f -s -o "${sig}.tmp" "https://mirror.rollernet.us/sanesecurity/$sig" && mv "${sig}.tmp" "$sig"; then
-            echo "  ✓ Updated $sig"
-            ((updated_count++))
+        # Check if signature exists (either active or disabled)
+        if [ -f "/var/lib/clamav/$sig" ] || [ -f "/var/lib/clamav/${sig}.disabled" ]; then
+            echo "Updating $sig..."
+            if curl --connect-timeout 10 --max-time 30 -f -s -o "${sig}.tmp" "https://mirror.rollernet.us/sanesecurity/$sig" 2>/dev/null && mv "${sig}.tmp" "$sig"; then
+                echo "  ✓ Updated $sig"
+                ((updated_count++))
+            else
+                echo "  ✗ Failed to update $sig (using existing version)"
+                rm -f "${sig}.tmp"
+            fi
         else
-            echo "  ✗ Failed to update $sig (using existing version)"
-            rm -f "${sig}.tmp"
+            echo "Downloading missing signature $sig..."
+            if curl --connect-timeout 10 --max-time 30 -f -s -o "$sig" "https://mirror.rollernet.us/sanesecurity/$sig" 2>/dev/null; then
+                if [ -f "$sig" ] && [ -s "$sig" ]; then
+                    echo "  ✓ Downloaded $sig"
+                    ((downloaded_count++))
+                else
+                    echo "  ✗ Failed to download $sig (empty file)"
+                    rm -f "$sig"
+                fi
+            else
+                echo "  ✗ Failed to download $sig (network error)"
+            fi
         fi
     done
     
-    if [ $updated_count -gt 0 ]; then
-        echo "Successfully updated $updated_count unofficial signature files."
+    if [ $updated_count -gt 0 ] || [ $downloaded_count -gt 0 ]; then
+        echo "Successfully updated $updated_count and downloaded $downloaded_count unofficial signature files."
     else
-        echo "No unofficial signatures could be updated, using existing versions."
+        echo "No unofficial signatures could be updated or downloaded."
     fi
     
     # Ensure unofficial signatures are active (in case they were disabled previously)
