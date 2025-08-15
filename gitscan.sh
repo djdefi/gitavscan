@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-#/ Usage: gitscan.sh [--full] [--options "OPTIONS"]
+#/ Usage: gitscan.sh [--full] [--unofficial-sigs] [--options "OPTIONS"]
 #/
 #/ Scan the latest commit, or the full history of a Git repository.
 #/
 #/ OPTIONS:
 #/   -h | --help                      Show this message.
 #/   -f | --full                      Full history scan.      
+#/   -u | --unofficial-sigs           Enable unofficial ClamAV signatures (updates them opportunistically).
 #/   -o | --options "OPTIONS"         Additional options for clamscan command.
 #/
 #/ EXAMPLES: 
@@ -15,6 +16,9 @@
 #/
 #/    Scan the entire history.
 #/      $ gitscan.sh --full
+#/    
+#/    Scan with unofficial signatures.
+#/      $ gitscan.sh --unofficial-sigs
 #/    
 #/    Scan with additional clamscan options.
 #/      $ gitscan.sh --options "--max-filesize=1M"
@@ -29,19 +33,25 @@ usage() {
 FULL_SCAN="false"
 ADDITIONAL_OPTIONS=""
 VERBOSE_MODE="false"
+UNOFFICIAL_SIGS="false"
+DETECTIONS_FOUND="false"
 
 # read the options
 # read the options
-TEMP=$(getopt -o vf:o: --long verbose,full,options: -n "$0" -- "$@") || { usage; exit 1; }
+TEMP=$(getopt -o hvfuo: --long help,verbose,full,unofficial-sigs,options: -n "$0" -- "$@") || { usage; exit 1; }
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
 while true ; do
     case "$1" in
+        -h|--help)
+            usage; exit 0 ;;
         -v|--verbose)
             VERBOSE_MODE="true"; shift ;;
         -f|--full)
             FULL_SCAN="true"; shift ;;
+        -u|--unofficial-sigs)
+            UNOFFICIAL_SIGS="true"; shift ;;
         -o|--options)
             case "$2" in
                 "") shift 2 ;;
@@ -53,9 +63,98 @@ while true ; do
     esac
 done
 
+# Update signatures
+echo "Updating ClamAV signatures..."
 /usr/bin/freshclam
 
+# Handle unofficial signatures based on flag
+if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
+    echo "Managing unofficial signatures..."
+    cd /var/lib/clamav
+    updated_count=0
+    downloaded_count=0
+    
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        # Check if signature exists (either active or disabled)
+        if [ -f "/var/lib/clamav/$sig" ] || [ -f "/var/lib/clamav/${sig}.disabled" ]; then
+            echo "Updating $sig..."
+            if curl --connect-timeout 10 --max-time 30 -f -s -o "${sig}.tmp" "https://mirror.rollernet.us/sanesecurity/$sig" 2>/dev/null && mv "${sig}.tmp" "$sig"; then
+                echo "  ✓ Updated $sig"
+                ((updated_count++))
+            else
+                echo "  ✗ Failed to update $sig (using existing version)"
+                rm -f "${sig}.tmp"
+            fi
+        else
+            echo "Downloading missing signature $sig..."
+            if curl --connect-timeout 10 --max-time 30 -f -s -o "$sig" "https://mirror.rollernet.us/sanesecurity/$sig" 2>/dev/null; then
+                if [ -f "$sig" ] && [ -s "$sig" ]; then
+                    echo "  ✓ Downloaded $sig"
+                    ((downloaded_count++))
+                else
+                    echo "  ✗ Failed to download $sig (empty file)"
+                    rm -f "$sig"
+                fi
+            else
+                echo "  ✗ Failed to download $sig (network error)"
+            fi
+        fi
+    done
+    
+    if [ $updated_count -gt 0 ] || [ $downloaded_count -gt 0 ]; then
+        echo "Successfully updated $updated_count and downloaded $downloaded_count unofficial signature files."
+    else
+        echo "No unofficial signatures could be updated or downloaded."
+    fi
+    
+    # Ensure unofficial signatures are active (in case they were disabled previously)
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        if [ -f "/var/lib/clamav/${sig}.disabled" ]; then
+            mv "/var/lib/clamav/${sig}.disabled" "/var/lib/clamav/$sig"
+        fi
+    done
+else
+    echo "Unofficial signatures disabled. Moving them aside..."
+    cd /var/lib/clamav
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        if [ -f "/var/lib/clamav/$sig" ]; then
+            mv "/var/lib/clamav/$sig" "/var/lib/clamav/${sig}.disabled"
+        fi
+    done
+fi
+
 echo "Beginning scan..."
+
+# Show loaded signatures information
+echo "Checking loaded signatures..."
+if command -v clamscan >/dev/null 2>&1; then
+    signature_count=$(find /var/lib/clamav -name "*.cvd" -o -name "*.cld" -o -name "*.ndb" -o -name "*.ftm" 2>/dev/null | wc -l)
+    echo "Total signature files in database: $signature_count"
+    
+    # Show unofficial signature status
+    echo "Checking unofficial signature status..."
+    unofficial_active=0
+    unofficial_available=0
+    for sig in badmacro.ndb blurl.ndb junk.ndb jurlbl.ndb jurlbla.ndb lott.ndb malware.ndb phish.ndb rogue.ndb sanesecurity.ftm; do
+        if [ -f "/var/lib/clamav/$sig" ]; then
+            echo "  ✓ Active: $sig"
+            ((unofficial_active++))
+            ((unofficial_available++))
+        elif [ -f "/var/lib/clamav/${sig}.disabled" ]; then
+            echo "  - Available but disabled: $sig"
+            ((unofficial_available++))
+        else
+            echo "  ✗ Missing: $sig"
+        fi
+    done
+    
+    echo "Unofficial signatures: $unofficial_active active, $unofficial_available available"
+    if [[ "${UNOFFICIAL_SIGS}" = "true" ]]; then
+        echo "Unofficial signatures are enabled for this scan."
+    else
+        echo "Unofficial signatures are disabled for this scan (use --unofficial-sigs to enable)."
+    fi
+fi
 
 if ! [ -d ".git" ]; then
   echo "ERROR: Not a git repository, skipping history scan."
@@ -70,8 +169,9 @@ REPO=$(pwd)
 echo "Scanning working and .git directories..."
 output=$($SCRIPT)
   if echo "$output" | grep -q "FOUND"; then
-    echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
-    echo "$output" | tee -a /output.txt
+    DETECTIONS_FOUND="true"
+    echo "Found malicious file in ref $(git rev-parse HEAD)"
+    echo "$output"
   fi
 
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
@@ -91,8 +191,9 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
     git checkout $F 2> /dev/null 1>&2
     output=$($SCRIPT $EXCLUDE)
     if echo "$output" | grep -q "FOUND"; then
-      echo "Found malicious file in ref $F" | tee -a /output.txt
-      echo "$output" | tee -a /output.txt
+      DETECTIONS_FOUND="true"
+      echo "Found malicious file in ref $F"
+      echo "$output"
     fi
     (( count++ ))
   done
@@ -102,9 +203,8 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   rm -rf $TMP
 fi
 
-if [ -s "/output.txt" ]; then
+if [[ "${DETECTIONS_FOUND}" = "true" ]]; then
   echo "Scan finished with detections $(date)"
-  cat /output.txt
   exit 1
 fi
 

@@ -5,6 +5,9 @@ inputs:
   full:  
     description: 'Full history scan'
     required: false
+  unofficial-sigs:
+    description: 'Download unofficial ClamAV signatures'
+    required: false
   options:
     description: 'Additional options for clamscan command'
     required: false
@@ -14,6 +17,7 @@ runs:
   args:
     - '/gitscan.sh'
     - ${{ inputs.full }}
+    - ${{ inputs.unofficial-sigs }}
     - ${{ inputs.options }}
 branding:
   icon: 'shield'  

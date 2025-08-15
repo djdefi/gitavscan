@@ -16,6 +16,22 @@ with:
   full: '--full'
 ```
 
+### Using unofficial ClamAV signatures
+
+Enable unofficial ClamAV signatures for enhanced detection. Unofficial signatures from trusted sources like SaneSecurity are pre-packaged in the Docker image and updated opportunistically:
+
+```
+uses: djdefi/gitavscan@main
+with:
+  unofficial-sigs: '--unofficial-sigs'
+```
+
+**How it works:**
+- Unofficial signatures are pre-downloaded during Docker image build for reliability
+- When `--unofficial-sigs` is used, the tool attempts to update these signatures to the latest versions
+- If updates fail (due to network issues), the pre-packaged signatures are still used
+- This ensures consistent operation even in restricted network environments
+
 ## Example workflow
 
 Deep history scan. Scans each commit in the repository history. Slow but thorough:
@@ -50,7 +66,26 @@ jobs:
     - uses: actions/checkout@v3
     - name: Git AV Scan
       uses: djdefi/gitavscan@main
-``` 
+```  
+
+### Using unofficial ClamAV signatures
+
+Scan with unofficial signatures from SaneSecurity and other trusted sources for enhanced malware detection. Signatures are pre-packaged and updated opportunistically:
+
+```yaml
+on: [push]
+
+jobs:
+  gitavscan:
+    runs-on: ubuntu-latest
+    name: Enhanced AV Scan
+    steps:
+    - uses: actions/checkout@v3
+    - name: Git AV Scan with Unofficial Signatures
+      uses: djdefi/gitavscan@main
+      with:
+        unofficial-sigs: '--unofficial-sigs'
+```
 
 ### Passing options to `clamscan`
 
@@ -85,3 +120,11 @@ Run full scan:
 ```shell
 docker run --rm -it -v /path/to/repo:/scandir gitavscan --full
 ```
+
+Run scan with unofficial signatures:
+
+```shell
+docker run --rm -it -v /path/to/repo:/scandir gitavscan --unofficial-sigs
+```
+
+**Note:** Unofficial signatures are pre-packaged in the image and updated opportunistically when `--unofficial-sigs` is used.

@@ -52,3 +52,18 @@ jobs:
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
+      
+      - name: Test unofficial signatures option
+        run: |
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --help || true)
+          echo "$output" | grep "unofficial-sigs"
+      
+      - name: Test unofficial signatures functionality
+        run: |
+          echo "Testing unofficial signatures functionality..."
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unofficial-sigs || true)
+          echo "$output"
+          # Check that unofficial signatures update was attempted
+          echo "$output" | grep "Attempting to update unofficial signatures"
+          # Check that signature status is reported  
+          echo "$output" | grep "Checking unofficial signature status"
