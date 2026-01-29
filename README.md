@@ -23,7 +23,8 @@ The following are **not** scanned and could potentially hide malicious content:
 - Git reflog entries and deleted commits
 - Git worktrees
 - Git notes
-- This tool should be used as part of a defense-in-depth security strategy
+
+**Important:** This tool should be used as part of a defense-in-depth security strategy.
 
 For maximum security, combine this tool with:
 - Code review processes

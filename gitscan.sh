@@ -74,11 +74,10 @@ fi
 
 EXCLUDE="--exclude=/.git"
 SCRIPT="/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS"
-TMP=$(mktemp -d -q)
 REPO=$(pwd)
 
 echo "Scanning working directory (excluding .git)..."
-output=$("$SCRIPT" $EXCLUDE "$REPO")
+output=$("$SCRIPT" "$EXCLUDE" "$REPO")
 if echo "$output" | grep -q "FOUND"; then
   echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
   echo "$output" | tee -a /output.txt
@@ -103,25 +102,28 @@ if git rev-parse --verify refs/stash > /dev/null 2>&1; then
       fi
     fi
     rm -rf "$stash_tmp"
-    (( stash_index++ ))
+    stash_index=$((stash_index + 1))
   done
 fi
 
 # Scan submodules if they exist
 if [ -f ".gitmodules" ]; then
   echo "Scanning git submodules..."
-  git submodule foreach --recursive "
-    echo \"Scanning submodule: \$name at \$sm_path\"
-    output=\$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS --exclude=/.git .)
-    if echo \"\$output\" | grep -q \"FOUND\"; then
-      echo \"Found malicious file in submodule \$name at \$sm_path\" | tee -a /output.txt
-      echo \"\$output\" | tee -a /output.txt
+  # Export ADDITIONAL_OPTIONS as an environment variable to avoid injection
+  export ADDITIONAL_OPTIONS
+  git submodule foreach --recursive '
+    echo "Scanning submodule: $name at $sm_path"
+    output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS --exclude=/.git .)
+    if echo "$output" | grep -q "FOUND"; then
+      echo "Found malicious file in submodule $name at $sm_path" | tee -a /output.txt
+      echo "$output" | tee -a /output.txt
     fi
-  " || true
+  ' || true
 fi
 
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
   # clone the git repository
+  TMP=$(mktemp -d -q)
   pushd "$TMP" > /dev/null 2>&1 || exit 1
   git clone "$REPO" 2>&1 || { echo "ERROR: Failed to clone repository"; exit 1; }
   cd "$(basename "$REPO")" || exit 1
@@ -137,12 +139,12 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   while IFS= read -r F; do
     echo "Scanning commit $count of $revs: $F"
     git checkout "$F" 2> /dev/null 1>&2
-    output=$("$SCRIPT" $EXCLUDE)
+    output=$("$SCRIPT" "$EXCLUDE")
     if echo "$output" | grep -q "FOUND"; then
       echo "Found malicious file in ref $F" | tee -a /output.txt
       echo "$output" | tee -a /output.txt
     fi
-    (( count++ ))
+    count=$((count + 1))
   done <<< "$revs_output"
 
   popd > /dev/null || exit 1

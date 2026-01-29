@@ -34,16 +34,16 @@ log_info() {
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 log_fail() {
     echo -e "${RED}[FAIL]${NC} $1"
-    ((TESTS_FAILED++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 run_test() {
-    ((TESTS_RUN++))
+    TESTS_RUN=$((TESTS_RUN + 1))
     local test_name="$1"
     log_info "Running test: $test_name"
 }

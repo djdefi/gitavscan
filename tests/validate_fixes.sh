@@ -125,10 +125,10 @@ else
 fi
 
 # Test 14: Initial scan writes to /output.txt
-if grep -q 'tee -a /output.txt' "$SCRIPT_PATH" | head -1 | grep -q "ref.*HEAD"; then
+if grep 'tee -a /output.txt' "$SCRIPT_PATH" | head -1 | grep -q "ref.*HEAD"; then
     log_pass "Initial scan findings written to /output.txt"
 else
-    # This check is complex, let's just verify the tee command exists
+    # Check that findings are written to /output.txt at all
     if grep -q 'tee -a /output.txt' "$SCRIPT_PATH"; then
         log_pass "Findings written to /output.txt"
     else
