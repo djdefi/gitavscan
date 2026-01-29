@@ -112,11 +112,11 @@ jobs:
 
 #### Common exclusion patterns
 
-- **Log files**: `--exclude='\.log$'`
-- **Temporary files**: `--exclude='\.tmp$'`
-- **Binary files**: `--exclude='\.(bin|exe|dll)$'`
-- **Media files**: `--exclude='\.(mp4|avi|mkv|mp3)$'`
-- **Archives**: `--exclude='\.(zip|tar|gz|7z)$'`
+- **Log files**: `--exclude=\.log$`
+- **Temporary files**: `--exclude=\.tmp$`
+- **Binary files**: `--exclude=\.(bin|exe|dll)$`
+- **Media files**: `--exclude=\.(mp4|avi|mkv|mp3)$`
+- **Archives**: `--exclude=\.(zip|tar|gz|7z)$`
 - **Specific directories**: `--exclude-dir=node_modules --exclude-dir=vendor`
 
 **Note**: Patterns use extended regular expressions. Remember to escape special characters like `.` as `\.` and use `$` to match the end of the filename.        
