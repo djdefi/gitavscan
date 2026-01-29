@@ -70,7 +70,56 @@ jobs:
       uses: djdefi/gitavscan@main
       with:
         options: '--max-filesize=1M'
-```        
+```
+
+### Excluding specific file types or patterns
+
+You can exclude specific file types or directories from the scan using the `options` input with clamscan's `--exclude` and `--exclude-dir` options. This is useful for skipping large binary files, log files, or other files that aren't relevant for security checks.
+
+#### Exclude file types by extension
+
+```yaml
+on: [push]
+jobs:
+  gitavscan:
+    runs-on: ubuntu-latest
+    name: AV scan with exclusions
+    steps:
+    - uses: actions/checkout@v3
+    - name: Git AV Scan
+      uses: djdefi/gitavscan@main
+      with:
+        options: '--exclude=\.(log|tmp|bak)$'
+```
+
+#### Exclude multiple patterns
+
+To exclude multiple file types, use multiple `--exclude` options:
+
+```yaml
+on: [push]
+jobs:
+  gitavscan:
+    runs-on: ubuntu-latest
+    name: AV scan with multiple exclusions
+    steps:
+    - uses: actions/checkout@v3
+    - name: Git AV Scan
+      uses: djdefi/gitavscan@main
+      with:
+        options: '--exclude=\.(log|tmp)$ --exclude=\.(bin|exe|dll)$ --exclude-dir=node_modules'
+```
+
+#### Common exclusion patterns
+
+- **Log files**: `--exclude='\.log$'`
+- **Temporary files**: `--exclude='\.tmp$'`
+- **Binary files**: `--exclude='\.(bin|exe|dll)$'`
+- **Media files**: `--exclude='\.(mp4|avi|mkv|mp3)$'`
+- **Archives**: `--exclude='\.(zip|tar|gz|7z)$'`
+- **Specific directories**: `--exclude-dir=node_modules --exclude-dir=vendor`
+
+**Note**: Patterns use extended regular expressions. Remember to escape special characters like `.` as `\.` and use `$` to match the end of the filename.        
 
 ## Running locally with Docker
 

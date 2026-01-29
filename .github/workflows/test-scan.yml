@@ -52,3 +52,17 @@ jobs:
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
+      
+      - name: Test exclude option - should skip .zip files
+        run: |
+          # This should not detect the zip file when excluded
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--exclude='\.zip$'" || true)
+          # Verify that .com and .txt EICAR files are still detected
+          echo "$output" | grep "eicar.com.txt" | grep "FOUND"
+          echo "$output" | grep "eicar.com:" | grep "FOUND"
+          # Verify that .zip files were not scanned (no zip file detections)
+          if echo "$output" | grep -i "eicar.*zip.*FOUND"; then
+            echo "ERROR: Zip files should have been excluded but were detected"
+            exit 1
+          fi
+          echo "SUCCESS: Zip files were excluded as expected"
