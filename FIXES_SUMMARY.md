@@ -20,12 +20,27 @@ This document summarizes all security gaps, bugs, and performance issues that we
 **Fix**: Added recursive submodule scanning with proper error handling.
 **Impact**: HIGH - Prevents malware from hiding in submodule repositories.
 
-### 4. Fixed Command Injection Vulnerability
+### 4. Added Git Worktree Scanning (NEW)
+**Issue**: Additional working directories (worktrees) were not scanned.
+**Fix**: Scan all worktrees using `git worktree list --porcelain`.
+**Impact**: HIGH - Worktrees are fully independent working directories that could contain malware.
+
+### 5. Added Git Hooks Scanning (NEW)
+**Issue**: Executable scripts in `.git/hooks/` were not scanned.
+**Fix**: Direct scanning of `.git/hooks/` directory with clamscan.
+**Impact**: CRITICAL - Hooks are executable scripts that run on git events, major security risk.
+
+### 6. Added Git LFS Scanning (NEW)
+**Issue**: Large File Storage (LFS) files were not scanned.
+**Fix**: Pull and scan all LFS files using `git lfs ls-files` and `git lfs pull`.
+**Impact**: HIGH - Large binaries are common malware vectors.
+
+### 7. Fixed Command Injection Vulnerability
 **Issue**: $ADDITIONAL_OPTIONS was embedded in a string executed by git submodule foreach, creating a command injection risk.
 **Fix**: Changed to export ADDITIONAL_OPTIONS as an environment variable and use single quotes to prevent shell expansion.
 **Impact**: CRITICAL - Prevents potential command injection attacks.
 
-### 5. Improved Variable Quoting
+### 8. Improved Variable Quoting
 **Issue**: Multiple variables ($TMP, $REPO, $F, $EXCLUDE) were not quoted, allowing word splitting and globbing attacks.
 **Fix**: Quoted all variables throughout the script.
 **Impact**: MEDIUM - Prevents attacks using paths with special characters.
@@ -73,13 +88,16 @@ This document summarizes all security gaps, bugs, and performance issues that we
 
 ### 1. Created Comprehensive Validation Test Suite
 **Location**: tests/validate_fixes.sh
-**Coverage**: 14 static analysis tests covering:
+**Coverage**: 17 static analysis tests covering:
 - Script syntax validation
 - Shellcheck compliance
 - All security fixes verification
 - All bug fixes verification
 - Performance optimizations verification
 - Documentation completeness
+- **NEW: Worktree scanning verification**
+- **NEW: Hooks scanning verification**
+- **NEW: LFS scanning verification**
 
 ### 2. Created Full Test Suite
 **Location**: tests/test_gitscan.sh
@@ -95,22 +113,24 @@ This document summarizes all security gaps, bugs, and performance issues that we
 
 ### 1. Updated README
 **Added Sections**:
-- "What is Scanned" - Clearly lists what the tool scans
-- "Security Limitations" - Documents what is NOT scanned
+- "What is Scanned" - Clearly lists what the tool scans (now includes worktrees, hooks, LFS)
+- "Security Limitations" - Documents what is NOT scanned (updated to remove worktrees)
 - Clarified disclaimer about defense-in-depth
 
 ### 2. Added Runtime Security Notice
 **Location**: End of gitscan.sh execution
 **Content**: Prints security limitations notice after each scan to remind users of tool boundaries.
 
+### 3. Added ADVANCED_SCANNING.md
+**Content**: Comprehensive implementation guide for scanning currently unsupported areas including git objects, reflog, notes, and other advanced git storage locations.
+
 ## Security Limitations (Documented but Not Fixed)
 
 The following are acknowledged limitations that cannot be easily fixed without major architectural changes:
 
-1. **Git Objects**: Loose and packed objects in .git/objects/ are not directly scanned
-2. **Git Reflog**: Deleted commits in reflog are not scanned
-3. **Git Worktrees**: Separate worktrees are not scanned
-4. **Git Notes**: Git notes metadata is not explicitly scanned
+1. **Git Objects**: Loose and packed objects in .git/objects/ are not directly scanned (very slow, compressed/deltified)
+2. **Git Reflog**: Deleted commits in reflog are not scanned (slow, requires many checkouts)
+3. **Git Notes**: Git notes metadata is not explicitly scanned (low risk, usually text)
 
 These limitations are now clearly documented in both the README and the script output.
 
@@ -119,26 +139,47 @@ These limitations are now clearly documented in both the README and the script o
 All fixes have been verified:
 - ✅ Shellcheck passes (0 errors, 1 informational note about intentional single quotes)
 - ✅ Bash syntax validation passes
-- ✅ All 14 validation tests pass
+- ✅ All 17 validation tests pass (+3 new tests for worktrees, hooks, LFS)
 - ✅ No security vulnerabilities detected by CodeQL (N/A for shell scripts)
 
 ## Metrics
 
-- **Lines Changed**: ~80 lines modified in gitscan.sh
-- **New Lines Added**: ~100 lines (stash/submodule scanning, error handling, timeouts)
-- **Test Coverage**: 14 validation tests, 13 functional tests
-- **Security Issues Fixed**: 5 critical/high severity
+- **Lines Changed**: ~90 lines modified in gitscan.sh
+- **New Lines Added**: ~160 lines (stash/submodule/worktrees/hooks/LFS scanning, error handling, timeouts)
+- **Test Coverage**: 17 validation tests (+3 new), 13 functional tests
+- **Security Issues Fixed**: 8 critical/high severity (+3 new: worktrees, hooks, LFS)
 - **Bugs Fixed**: 5 medium severity
 - **Performance Improvements**: 2
+
+## Scanning Coverage Summary
+
+### What is NOW Scanned:
+✅ Working directory files (excluding .git)
+✅ Full commit history (with --full flag)
+✅ Git stashed changes
+✅ Git submodules (recursive)
+✅ **Git worktrees** (NEW)
+✅ **Git hooks** (NEW)
+✅ **Git LFS files** (NEW)
+
+### What is NOT Scanned:
+❌ Git objects (loose/packed) in .git/objects/
+❌ Git reflog entries and deleted commits
+❌ Git notes
 
 ## Conclusion
 
 This comprehensive fix addresses all identified security gaps, operational bugs, and performance issues in gitavscan. The tool now:
-- Scans more comprehensively (stashes, submodules)
+- Scans significantly more comprehensively (stashes, submodules, **worktrees, hooks, LFS**)
 - Is more secure (fixes quoting, command injection)
 - Is more robust (error handling, timeouts)
 - Is more efficient (cached operations)
 - Is better documented (clear limitations, usage examples)
-- Has comprehensive test coverage
+- Has comprehensive test coverage (17 validation tests)
 
-The tool remains a "proof of concept" but is now significantly more production-ready while being transparent about its limitations.
+The "easy wins" identified have been implemented:
+1. ✅ **Worktrees** - Fast, simple, scans additional working directories
+2. ✅ **Hooks** - Instant, high security value, scans executable scripts
+3. ✅ **LFS** - Important malware vector, scans large binary files
+
+The tool remains transparent about its limitations while being significantly more production-ready and comprehensive in its scanning coverage.
