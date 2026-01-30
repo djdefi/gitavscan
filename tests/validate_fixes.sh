@@ -136,6 +136,27 @@ else
     fi
 fi
 
+# Test 15: Worktree scanning feature added
+if grep -q 'git worktree list' "$SCRIPT_PATH" && grep -q 'Scanning git worktrees' "$SCRIPT_PATH"; then
+    log_pass "Worktree scanning feature added"
+else
+    log_fail "Worktree scanning not implemented"
+fi
+
+# Test 16: Hooks scanning feature added
+if grep -q '.git/hooks' "$SCRIPT_PATH" && grep -q 'Scanning git hooks' "$SCRIPT_PATH"; then
+    log_pass "Hooks scanning feature added"
+else
+    log_fail "Hooks scanning not implemented"
+fi
+
+# Test 17: LFS scanning feature added
+if grep -q 'git lfs' "$SCRIPT_PATH" && grep -q 'Scanning Git LFS files' "$SCRIPT_PATH"; then
+    log_pass "LFS scanning feature added"
+else
+    log_fail "LFS scanning not implemented"
+fi
+
 echo ""
 echo "======================================"
 echo "Test Summary"

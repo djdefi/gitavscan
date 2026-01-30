@@ -15,13 +15,15 @@ This tool scans:
 - Each commit in the repository history (when using `--full` flag)
 - Git stashed changes
 - Git submodules (recursive)
+- Git worktrees (additional working directories)
+- Git hooks (executable scripts in `.git/hooks/`)
+- Git LFS (Large File Storage) files
 
 ## Security Limitations
 
 The following are **not** scanned and could potentially hide malicious content:
 - Git objects (loose and packed) in `.git/objects/` directory
 - Git reflog entries and deleted commits
-- Git worktrees
 - Git notes
 
 **Important:** This tool should be used as part of a defense-in-depth security strategy.

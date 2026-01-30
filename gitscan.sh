@@ -121,6 +121,58 @@ if [ -f ".gitmodules" ]; then
   ' || true
 fi
 
+# Scan git worktrees if they exist
+if git worktree list >/dev/null 2>&1; then
+  echo "Scanning git worktrees..."
+  git worktree list --porcelain 2>/dev/null | grep '^worktree ' | cut -d' ' -f2 | while IFS= read -r worktree; do
+    # Skip the main worktree (already scanned)
+    if [ "$worktree" != "$REPO" ]; then
+      if [ -d "$worktree" ]; then
+        echo "Scanning worktree: $worktree"
+        output=$("$SCRIPT" "$EXCLUDE" "$worktree")
+        if echo "$output" | grep -q "FOUND"; then
+          echo "Found malicious file in worktree: $worktree" | tee -a /output.txt
+          echo "$output" | tee -a /output.txt
+        fi
+      fi
+    fi
+  done
+fi
+
+# Scan git hooks directory
+if [ -d ".git/hooks" ]; then
+  echo "Scanning git hooks..."
+  output=$(/usr/bin/clamscan -ri --no-summary "$ADDITIONAL_OPTIONS" .git/hooks/)
+  if echo "$output" | grep -q "FOUND"; then
+    echo "Found malicious file in git hooks" | tee -a /output.txt
+    echo "$output" | tee -a /output.txt
+  fi
+fi
+
+# Scan git LFS files if LFS is initialized
+if git lfs ls-files >/dev/null 2>&1; then
+  lfs_files=$(git lfs ls-files 2>/dev/null | wc -l)
+  if [ "$lfs_files" -gt 0 ]; then
+    echo "Scanning Git LFS files..."
+    echo "Found $lfs_files LFS files to scan..."
+    # Pull LFS files if not already present
+    git lfs pull 2>/dev/null || true
+    # Scan each LFS file
+    git lfs ls-files 2>/dev/null | while IFS= read -r line; do
+      # Extract filename (3rd field after splitting by spaces/tabs)
+      file=$(echo "$line" | awk '{print $3}')
+      if [ -f "$file" ]; then
+        echo "Scanning LFS file: $file"
+        output=$(/usr/bin/clamscan --no-summary "$ADDITIONAL_OPTIONS" "$file")
+        if echo "$output" | grep -q "FOUND"; then
+          echo "Found malicious file in LFS: $file" | tee -a /output.txt
+          echo "$output" | tee -a /output.txt
+        fi
+      fi
+    done
+  fi
+fi
+
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
   # clone the git repository
   TMP=$(mktemp -d -q)
@@ -163,6 +215,5 @@ echo ""
 echo "NOTE: This scan has the following limitations:"
 echo "  - Git objects (loose and packed) in .git/objects/ are not directly scanned"
 echo "  - Git reflog entries and deleted commits are not scanned"
-echo "  - Git worktrees are not scanned"
 echo "  - Git notes are not explicitly scanned"
 echo "  - This tool should be used as part of a defense-in-depth strategy"
