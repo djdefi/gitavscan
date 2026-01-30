@@ -75,8 +75,8 @@ fi
 EXCLUDE="--exclude=/.git"
 REPO=$(pwd)
 
-echo "Scanning working directory (excluding .git)..."
-output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$EXCLUDE" .)
+echo "Scanning working directory..."
+output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS .)
 if echo "$output" | grep -q "FOUND"; then
   echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
   echo "$output" | tee -a /output.txt
