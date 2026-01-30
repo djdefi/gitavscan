@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: '0'
     - name: Git AV Scan
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     name: AV scan
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Git AV Scan
       uses: djdefi/gitavscan@v23
 ``` 
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: '0'
     - name: Git AV Scan
