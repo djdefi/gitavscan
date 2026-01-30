@@ -73,11 +73,10 @@ if ! [ -d ".git" ]; then
 fi
 
 EXCLUDE="--exclude=/.git"
-SCRIPT="/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS"
 REPO=$(pwd)
 
 echo "Scanning working directory (excluding .git)..."
-output=$("$SCRIPT" "$EXCLUDE" "$REPO")
+output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$EXCLUDE" "$REPO")
 if echo "$output" | grep -q "FOUND"; then
   echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
   echo "$output" | tee -a /output.txt
@@ -95,7 +94,7 @@ if git rev-parse --verify refs/stash > /dev/null 2>&1; then
     git -C "$stash_tmp" init > /dev/null 2>&1
     git stash show -p "stash@{$stash_index}" | git -C "$stash_tmp" apply > /dev/null 2>&1 || true
     if [ -n "$(ls -A "$stash_tmp" 2>/dev/null)" ]; then
-      output=$("$SCRIPT" "$stash_tmp")
+      output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$stash_tmp")
       if echo "$output" | grep -q "FOUND"; then
         echo "Found malicious file in stash@{$stash_index}" | tee -a /output.txt
         echo "$output" | tee -a /output.txt
@@ -131,7 +130,7 @@ if git worktree list >/dev/null 2>&1; then
     if [ "$worktree" != "$REPO" ]; then
       if [ -d "$worktree" ]; then
         echo "Scanning worktree: $worktree"
-        output=$("$SCRIPT" "$EXCLUDE" "$worktree")
+        output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$EXCLUDE" "$worktree")
         if echo "$output" | grep -q "FOUND"; then
           echo "Found malicious file in worktree: $worktree" | tee -a /output.txt
           echo "$output" | tee -a /output.txt
@@ -193,7 +192,7 @@ if [[ "${FULL_SCAN:-}" = "true" ]]; then
   while IFS= read -r F; do
     echo "Scanning commit $count of $revs: $F"
     git checkout "$F" 2> /dev/null 1>&2
-    output=$("$SCRIPT" "$EXCLUDE")
+    output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$EXCLUDE")
     if echo "$output" | grep -q "FOUND"; then
       echo "Found malicious file in ref $F" | tee -a /output.txt
       echo "$output" | tee -a /output.txt
