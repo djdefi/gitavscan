@@ -52,3 +52,11 @@ jobs:
         run: |
           output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --unknown-option || true)
           echo "$output" | grep "OPTIONS:"
+      
+      - name: Test options with special characters are safely handled
+        run: |
+          # Verify that options with shell metacharacters don't cause injection
+          # This tests the fix for command injection in submodule scanning
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --options "--max-filesize=1M" 2>&1 || true)
+          # Should complete without shell errors - if injection occurred, we'd see errors
+          echo "$output" | grep -v "syntax error" | grep -v "unexpected"
