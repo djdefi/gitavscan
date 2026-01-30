@@ -124,7 +124,9 @@ fi
 # Scan git worktrees if they exist
 if git worktree list >/dev/null 2>&1; then
   echo "Scanning git worktrees..."
-  git worktree list --porcelain 2>/dev/null | grep '^worktree ' | cut -d' ' -f2 | while IFS= read -r worktree; do
+  # Cache worktree list to avoid pipeline issues with set -o pipefail
+  worktree_list=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | cut -d' ' -f2)
+  while IFS= read -r worktree; do
     # Skip the main worktree (already scanned)
     if [ "$worktree" != "$REPO" ]; then
       if [ -d "$worktree" ]; then
@@ -136,13 +138,13 @@ if git worktree list >/dev/null 2>&1; then
         fi
       fi
     fi
-  done
+  done <<< "$worktree_list"
 fi
 
 # Scan git hooks directory
 if [ -d ".git/hooks" ]; then
   echo "Scanning git hooks..."
-  output=$(/usr/bin/clamscan -ri --no-summary "$ADDITIONAL_OPTIONS" .git/hooks/)
+  output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS .git/hooks/)
   if echo "$output" | grep -q "FOUND"; then
     echo "Found malicious file in git hooks" | tee -a /output.txt
     echo "$output" | tee -a /output.txt
@@ -151,25 +153,25 @@ fi
 
 # Scan git LFS files if LFS is initialized
 if git lfs ls-files >/dev/null 2>&1; then
-  lfs_files=$(git lfs ls-files 2>/dev/null | wc -l)
+  # Cache LFS files list to avoid redundant execution and pipeline issues
+  lfs_files_list=$(git lfs ls-files -n 2>/dev/null)
+  lfs_files=$(echo "$lfs_files_list" | wc -l)
   if [ "$lfs_files" -gt 0 ]; then
     echo "Scanning Git LFS files..."
     echo "Found $lfs_files LFS files to scan..."
     # Pull LFS files if not already present
     git lfs pull 2>/dev/null || true
     # Scan each LFS file
-    git lfs ls-files 2>/dev/null | while IFS= read -r line; do
-      # Extract filename (3rd field after splitting by spaces/tabs)
-      file=$(echo "$line" | awk '{print $3}')
+    while IFS= read -r file; do
       if [ -f "$file" ]; then
         echo "Scanning LFS file: $file"
-        output=$(/usr/bin/clamscan --no-summary "$ADDITIONAL_OPTIONS" "$file")
+        output=$(/usr/bin/clamscan --no-summary $ADDITIONAL_OPTIONS "$file")
         if echo "$output" | grep -q "FOUND"; then
           echo "Found malicious file in LFS: $file" | tee -a /output.txt
           echo "$output" | tee -a /output.txt
         fi
       fi
-    done
+    done <<< "$lfs_files_list"
   fi
 fi
 
