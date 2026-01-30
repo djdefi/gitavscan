@@ -23,7 +23,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # Download test virii
       - name: Download EICAR test files
@@ -31,7 +31,7 @@ jobs:
           wget "https://secure.eicar.org/eicar.com.txt"
           wget "https://secure.eicar.org/eicar.com"
           wget "https://secure.eicar.org/eicar_com.zip"
-          wget "https://secure.eicar.org/eicarcom2.zip"
+          wget "https://secure.eicar.org/eicarcom2.zip" || echo "eicarcom2.zip not available, skipping"
       
       - name: Build image
         run: docker build -t gitavscan .
