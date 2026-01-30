@@ -37,7 +37,7 @@ For maximum security, combine this tool with:
 ## Example usage
 
 ```
-uses: djdefi/gitavscan@main
+uses: djdefi/gitavscan@v23
 with:
   full: '--full'
 ```
@@ -54,11 +54,11 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@main
+      uses: djdefi/gitavscan@v23
       with:
         full: '--full'
 ```  
@@ -73,9 +73,9 @@ jobs:
     runs-on: ubuntu-latest
     name: AV scan
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Git AV Scan
-      uses: djdefi/gitavscan@main
+      uses: djdefi/gitavscan@v23
 ``` 
 
 ### Passing options to `clamscan`
@@ -89,11 +89,11 @@ jobs:
     runs-on: ubuntu-latest
     name: History AV Scan
     steps:
-    - uses: actions/checkout@main
+    - uses: actions/checkout@v4
       with:
         fetch-depth: '0'
     - name: Git AV Scan
-      uses: djdefi/gitavscan@main
+      uses: djdefi/gitavscan@v23
       with:
         options: '--max-filesize=1M'
 ```        
