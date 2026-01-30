@@ -8,6 +8,32 @@ This is a proof of concept, and does not provide any guarantee that carefully hi
 
 This project is not affiliated with the official ClamAV project.
 
+## What is Scanned
+
+This tool scans:
+- Working directory files (excluding `.git` directory)
+- Each commit in the repository history (when using `--full` flag)
+- Git stashed changes
+- Git submodules (recursive)
+- Git worktrees (additional working directories)
+- Git hooks (executable scripts in `.git/hooks/`)
+- Git LFS (Large File Storage) files
+
+## Security Limitations
+
+The following are **not** scanned and could potentially hide malicious content:
+- Git objects (loose and packed) in `.git/objects/` directory
+- Git reflog entries and deleted commits
+- Git notes
+
+**Important:** This tool should be used as part of a defense-in-depth security strategy.
+
+For maximum security, combine this tool with:
+- Code review processes
+- Branch protection rules
+- Endpoint security software
+- Regular security audits
+
 ## Example usage
 
 ```

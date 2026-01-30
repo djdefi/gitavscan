@@ -28,18 +28,16 @@ usage() {
 # set default values
 FULL_SCAN="false"
 ADDITIONAL_OPTIONS=""
-VERBOSE_MODE="false"
 
 # read the options
-# read the options
-TEMP=$(getopt -o vf:o: --long verbose,full,options: -n "$0" -- "$@") || { usage; exit 1; }
+TEMP=$(getopt -o vfo: --long verbose,full,options: -n "$0" -- "$@") || { usage; exit 1; }
 eval set -- "$TEMP"
 
 # extract options and their arguments into variables.
 while true ; do
     case "$1" in
         -v|--verbose)
-            VERBOSE_MODE="true"; shift ;;
+            shift ;;
         -f|--full)
             FULL_SCAN="true"; shift ;;
         -o|--options)
@@ -53,7 +51,19 @@ while true ; do
     esac
 done
 
-/usr/bin/freshclam
+/usr/bin/freshclam &
+freshclam_pid=$!
+timeout=300
+elapsed=0
+while kill -0 "$freshclam_pid" 2>/dev/null && [ $elapsed -lt $timeout ]; do
+  sleep 5
+  elapsed=$((elapsed + 5))
+done
+if kill -0 "$freshclam_pid" 2>/dev/null; then
+  echo "WARNING: freshclam timed out after ${timeout}s, continuing with existing definitions"
+  kill "$freshclam_pid" 2>/dev/null || true
+fi
+wait "$freshclam_pid" 2>/dev/null || true
 
 echo "Beginning scan..."
 
@@ -63,43 +73,136 @@ if ! [ -d ".git" ]; then
 fi
 
 EXCLUDE="--exclude=/.git"
-SCRIPT="/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS"
-TMP=$(mktemp -d -q)
 REPO=$(pwd)
 
-echo "Scanning working and .git directories..."
-output=$($SCRIPT)
+echo "Scanning working directory..."
+output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS .)
+if echo "$output" | grep -q "FOUND"; then
+  echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
+  echo "$output" | tee -a /output.txt
+fi
+
+# Scan git stashes if they exist
+if git rev-parse --verify refs/stash > /dev/null 2>&1; then
+  echo "Scanning stashed changes..."
+  stash_count=$(git stash list | wc -l)
+  echo "Found $stash_count stashes to scan..."
+  stash_index=0
+  while [ $stash_index -lt "$stash_count" ]; do
+    echo "Scanning stash@{$stash_index}..."
+    stash_tmp=$(mktemp -d -q)
+    git -C "$stash_tmp" init > /dev/null 2>&1
+    git stash show -p "stash@{$stash_index}" | git -C "$stash_tmp" apply > /dev/null 2>&1 || true
+    if [ -n "$(ls -A "$stash_tmp" 2>/dev/null)" ]; then
+      output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$stash_tmp")
+      if echo "$output" | grep -q "FOUND"; then
+        echo "Found malicious file in stash@{$stash_index}" | tee -a /output.txt
+        echo "$output" | tee -a /output.txt
+      fi
+    fi
+    rm -rf "$stash_tmp"
+    stash_index=$((stash_index + 1))
+  done
+fi
+
+# Scan submodules if they exist
+if [ -f ".gitmodules" ]; then
+  echo "Scanning git submodules..."
+  # Export ADDITIONAL_OPTIONS as an environment variable to avoid injection
+  export ADDITIONAL_OPTIONS
+  git submodule foreach --recursive '
+    echo "Scanning submodule: $name at $sm_path"
+    output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS --exclude=/.git .)
+    if echo "$output" | grep -q "FOUND"; then
+      echo "Found malicious file in submodule $name at $sm_path" | tee -a /output.txt
+      echo "$output" | tee -a /output.txt
+    fi
+  ' || true
+fi
+
+# Scan git worktrees if they exist
+if git worktree list >/dev/null 2>&1; then
+  echo "Scanning git worktrees..."
+  # Cache worktree list to avoid pipeline issues with set -o pipefail
+  worktree_list=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | cut -d' ' -f2)
+  while IFS= read -r worktree; do
+    # Skip the main worktree (already scanned)
+    if [ "$worktree" != "$REPO" ]; then
+      if [ -d "$worktree" ]; then
+        echo "Scanning worktree: $worktree"
+        output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$EXCLUDE" "$worktree")
+        if echo "$output" | grep -q "FOUND"; then
+          echo "Found malicious file in worktree: $worktree" | tee -a /output.txt
+          echo "$output" | tee -a /output.txt
+        fi
+      fi
+    fi
+  done <<< "$worktree_list"
+fi
+
+# Scan git hooks directory
+if [ -d ".git/hooks" ]; then
+  echo "Scanning git hooks..."
+  output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS .git/hooks/)
   if echo "$output" | grep -q "FOUND"; then
-    echo "Found malicious file in ref $(git rev-parse HEAD)" | tee -a /output.txt
+    echo "Found malicious file in git hooks" | tee -a /output.txt
     echo "$output" | tee -a /output.txt
   fi
+fi
+
+# Scan git LFS files if LFS is initialized
+if git lfs ls-files >/dev/null 2>&1; then
+  # Cache LFS files list to avoid redundant execution and pipeline issues
+  lfs_files_list=$(git lfs ls-files -n 2>/dev/null)
+  lfs_files=$(echo "$lfs_files_list" | wc -l)
+  if [ "$lfs_files" -gt 0 ]; then
+    echo "Scanning Git LFS files..."
+    echo "Found $lfs_files LFS files to scan..."
+    # Pull LFS files if not already present
+    git lfs pull 2>/dev/null || true
+    # Scan each LFS file
+    while IFS= read -r file; do
+      if [ -f "$file" ]; then
+        echo "Scanning LFS file: $file"
+        output=$(/usr/bin/clamscan --no-summary $ADDITIONAL_OPTIONS "$file")
+        if echo "$output" | grep -q "FOUND"; then
+          echo "Found malicious file in LFS: $file" | tee -a /output.txt
+          echo "$output" | tee -a /output.txt
+        fi
+      fi
+    done <<< "$lfs_files_list"
+  fi
+fi
 
 if [[ "${FULL_SCAN:-}" = "true" ]]; then
   # clone the git repository
-  pushd $TMP > /dev/null 2>&1
-  git clone $REPO 2> /dev/null 1>&2
-  cd $(basename $REPO)
+  TMP=$(mktemp -d -q)
+  pushd "$TMP" > /dev/null 2>&1 || exit 1
+  git clone "$REPO" 2>&1 || { echo "ERROR: Failed to clone repository"; exit 1; }
+  cd "$(basename "$REPO")" || exit 1
 
-  # count commits 
-  revs=$(git rev-list --all --remotes --pretty | grep ^commit\ | sed "s;commit ;;" | wc -l)
+  # count commits and cache the rev-list output
+  echo "Collecting revision list..."
+  revs_output=$(git rev-list --all --remotes --pretty | grep ^commit\ | sed "s;commit ;;")
+  revs=$(echo "$revs_output" | wc -l)
   count=1
   echo "Inspecting $revs revisions..."
 
   # scan all
-  for F in $(git rev-list --all --remotes --pretty | grep ^commit\ | sed "s;commit ;;"); do
+  while IFS= read -r F; do
     echo "Scanning commit $count of $revs: $F"
-    git checkout $F 2> /dev/null 1>&2
-    output=$($SCRIPT $EXCLUDE)
+    git checkout "$F" 2> /dev/null 1>&2
+    output=$(/usr/bin/clamscan -ri --no-summary $ADDITIONAL_OPTIONS "$EXCLUDE")
     if echo "$output" | grep -q "FOUND"; then
       echo "Found malicious file in ref $F" | tee -a /output.txt
       echo "$output" | tee -a /output.txt
     fi
-    (( count++ ))
-  done
+    count=$((count + 1))
+  done <<< "$revs_output"
 
-  popd > /dev/null
+  popd > /dev/null || exit 1
 
-  rm -rf $TMP
+  rm -rf "$TMP"
 fi
 
 if [ -s "/output.txt" ]; then
@@ -109,3 +212,9 @@ if [ -s "/output.txt" ]; then
 fi
 
 echo "Scan finished $(date)"
+echo ""
+echo "NOTE: This scan has the following limitations:"
+echo "  - Git objects (loose and packed) in .git/objects/ are not directly scanned"
+echo "  - Git reflog entries and deleted commits are not scanned"
+echo "  - Git notes are not explicitly scanned"
+echo "  - This tool should be used as part of a defense-in-depth strategy"
