@@ -38,11 +38,21 @@ jobs:
       
       - name: Run full scan
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --full | grep "Win.Test.EICAR_HDB-1 FOUND"
+          set +e
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh --full 2>&1)
+          echo "=== Full scan output ==="
+          echo "$output"
+          echo "=== End output ==="
+          echo "$output" | grep "Win.Test.EICAR_HDB-1 FOUND"
 
       - name: Run basic scan
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh | grep "Win.Test.EICAR_HDB-1 FOUND"
+          set +e
+          output=$(docker run --rm -v $GITHUB_WORKSPACE:/scandir gitavscan /gitscan.sh 2>&1)
+          echo "=== Basic scan output ==="
+          echo "$output"
+          echo "=== End output ==="
+          echo "$output" | grep "Win.Test.EICAR_HDB-1 FOUND"
       
       - name: Run basic scan with optional args
         run: |
