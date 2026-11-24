@@ -1,5 +1,8 @@
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   gitavscan:
     runs-on: ubuntu-latest
